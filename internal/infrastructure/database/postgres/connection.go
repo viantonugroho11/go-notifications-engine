@@ -3,7 +3,11 @@ package postgres
 import (
 	"context"
 
-	"go-boilerplate-clean/internal/repository/user/model"
+	notifmodel "go-boilerplate-clean/internal/repository/notification/model"
+	inboxmodel "go-boilerplate-clean/internal/repository/notificationinbox/model"
+	logmodel "go-boilerplate-clean/internal/repository/notificationlog/model"
+	tplmodel "go-boilerplate-clean/internal/repository/notificationtemplate/model"
+	usermodel "go-boilerplate-clean/internal/repository/user/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -30,7 +34,13 @@ func Connect(ctx context.Context, dsn string) (*gorm.DB, error) {
 }
 
 func Migrate(db *gorm.DB) error {
-	return db.AutoMigrate(&model.User{})
+	return db.AutoMigrate(
+		&usermodel.User{},
+		&notifmodel.Notification{},
+		&tplmodel.NotificationTemplate{},
+		&logmodel.NotificationLog{},
+		&inboxmodel.NotificationInbox{},
+	)
 }
 
 

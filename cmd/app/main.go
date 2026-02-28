@@ -13,9 +13,17 @@ import (
 	kafkainfra "go-boilerplate-clean/internal/infrastructure/broker/kafka"
 	redisinfra "go-boilerplate-clean/internal/infrastructure/cache/redis"
 	pginfra "go-boilerplate-clean/internal/infrastructure/database/postgres"
+	notifpg "go-boilerplate-clean/internal/repository/notification/postgres"
+	inboxpg "go-boilerplate-clean/internal/repository/notificationinbox/postgres"
+	logpg "go-boilerplate-clean/internal/repository/notificationlog/postgres"
+	tplpg "go-boilerplate-clean/internal/repository/notificationtemplate/postgres"
 	userpg "go-boilerplate-clean/internal/repository/user/postgres"
 	"go-boilerplate-clean/internal/transport/apis"
 	kafkarunner "go-boilerplate-clean/internal/transport/event/kafka"
+	usecaseinbox "go-boilerplate-clean/internal/usecase/notificationinbox"
+	usecaselog "go-boilerplate-clean/internal/usecase/notificationlogs"
+	usecasenotif "go-boilerplate-clean/internal/usecase/notifications"
+	usecasetpl "go-boilerplate-clean/internal/usecase/notificationtemplates"
 	usecaseusers "go-boilerplate-clean/internal/usecase/users"
 
 	"github.com/IBM/sarama"
@@ -52,7 +60,26 @@ func main() {
 	}
 	userRepo := userpg.NewUserRepository(db)
 	userService := usecaseusers.NewUserService(userRepo)
-	apis.RegisterRoutes(e, userService)
+
+	notificationRepo := notifpg.NewNotificationRepository(db)
+	notificationService := usecasenotif.NewNotificationService(notificationRepo)
+
+	templateRepo := tplpg.NewNotificationTemplateRepository(db)
+	templateService := usecasetpl.NewNotificationTemplateService(templateRepo)
+
+	logRepo := logpg.NewNotificationLogRepository(db)
+	logService := usecaselog.NewNotificationLogService(logRepo)
+
+	inboxRepo := inboxpg.NewNotificationInboxRepository(db)
+	inboxService := usecaseinbox.NewNotificationInboxService(inboxRepo)
+
+	apis.RegisterRoutes(e, apis.Services{
+		User:                userService,
+		Notification:        notificationService,
+		NotificationTemplate: templateService,
+		NotificationLog:     logService,
+		NotificationInbox:   inboxService,
+	})
 
 	// Init Redis
 	redisClient, err := redisinfra.NewClient(cfg.Redis.Addr, cfg.Redis.Password, strconv.Itoa(cfg.Redis.DB))
