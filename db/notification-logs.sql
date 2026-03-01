@@ -3,13 +3,13 @@ CREATE TABLE notification_logs (
     notification_id UUID NOT NULL,
     user_id UUID NOT NULL,
 
-    channel VARCHAR(50) NOT NULL,
+    -- channel VARCHAR(20) NOT NULL, // email / sms / push / whatsapp / telegram / line / wechat / weibo / kakao
     send_to TEXT,
 
     rendered_subject VARCHAR(255),
     rendered_message TEXT,
 
-    data JSONB,                          -- PER-USER override (optional)
+    -- data JSONB,                          -- PER-USER override (optional)
 
     state VARCHAR(20) NOT NULL,           -- queued / processing / sent / failed / completed
     retry_count INT DEFAULT 0,
