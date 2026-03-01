@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"go-boilerplate-clean/internal/entity/notifications"
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
 	"go-boilerplate-clean/internal/transport/apis/dto"
 	notifUsecase "go-boilerplate-clean/internal/usecase/notifications"
@@ -58,7 +59,7 @@ func (h *NotificationHandler) Update(c echo.Context) error {
 		EventKey:               req.EventKey,
 		NotificationTemplateID: req.NotificationTemplateID,
 		Data:                   req.Data,
-		Category:               req.Category,
+		Category:               notifications.Category(req.Category),
 		State:                  req.State,
 		ScheduleAt:             req.ScheduleAt,
 		UpdatedBy:              req.UpdatedBy,

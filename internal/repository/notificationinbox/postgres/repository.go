@@ -8,7 +8,7 @@ import (
 	"go-boilerplate-clean/internal/repository/notificationinbox"
 	"go-boilerplate-clean/internal/repository/notificationinbox/model"
 
-	"github.com/google/uuid"
+
 	"gorm.io/gorm"
 )
 
@@ -21,28 +21,20 @@ func NewNotificationInboxRepository(db *gorm.DB) notificationinbox.NotificationI
 }
 
 func (r *notificationInboxRepository) Create(ctx context.Context, i inboxEntity.NotificationInbox) (inboxEntity.NotificationInbox, error) {
-	if i.ID == "" {
-		i.ID = uuid.NewString()
-	}
-	m := model.NotificationInbox{
-		ID:                i.ID,
-		UserID:            i.UserID,
-		NotificationLogID: i.NotificationLogID,
-		IsRead:            i.IsRead,
-		ReadAt:            i.ReadAt,
-		CreatedAt:         i.CreatedAt,
-	}
+	m := model.ToDBNotificationInbox(i)
 	err := r.db.WithContext(ctx).Create(&m).Error
-	return r.toEntity(m), err
+	return m.ToEntity(), err
 }
 
 func (r *notificationInboxRepository) GetByID(ctx context.Context, id string) (inboxEntity.NotificationInbox, error) {
 	var m model.NotificationInbox
-	err := r.db.WithContext(ctx).First(&m, "id = ?", id).Error
+	err := r.db.WithContext(ctx).
+		Preload("NotificationLog").
+		First(&m, "id = ?", id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return inboxEntity.NotificationInbox{}, errors.New("notification inbox not found")
 	}
-	return r.toEntity(m), err
+	return m.ToEntity(), err
 }
 
 func (r *notificationInboxRepository) List(ctx context.Context) ([]inboxEntity.NotificationInbox, error) {
@@ -52,30 +44,25 @@ func (r *notificationInboxRepository) List(ctx context.Context) ([]inboxEntity.N
 	}
 	result := make([]inboxEntity.NotificationInbox, 0, len(rows))
 	for _, m := range rows {
-		result = append(result, r.toEntity(m))
+		result = append(result, m.ToEntity())
 	}
 	return result, nil
 }
 
 func (r *notificationInboxRepository) Update(ctx context.Context, i inboxEntity.NotificationInbox) (inboxEntity.NotificationInbox, error) {
-	updates := map[string]interface{}{
-		"user_id":             i.UserID,
-		"notification_log_id": i.NotificationLogID,
-		"is_read":             i.IsRead,
-		"read_at":             i.ReadAt,
-	}
-	tx := r.db.WithContext(ctx).Model(&model.NotificationInbox{}).Where("id = ?", i.ID).Updates(updates)
+	m := model.ToDBNotificationInbox(i)
+	tx := r.db.WithContext(ctx).Model(&model.NotificationInbox{}).Where("id = ?", m.ID).Updates(&m)
 	if tx.Error != nil {
 		return inboxEntity.NotificationInbox{}, tx.Error
 	}
 	if tx.RowsAffected == 0 {
 		return inboxEntity.NotificationInbox{}, errors.New("notification inbox not found")
 	}
-	return i, nil
+	return m.ToEntity(), nil
 }
 
 func (r *notificationInboxRepository) Delete(ctx context.Context, id string) error {
-	tx := r.db.WithContext(ctx).Delete(&model.NotificationInbox{}, "id = ?", id)
+	tx := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.NotificationInbox{})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -85,13 +72,3 @@ func (r *notificationInboxRepository) Delete(ctx context.Context, id string) err
 	return nil
 }
 
-func (r *notificationInboxRepository) toEntity(m model.NotificationInbox) inboxEntity.NotificationInbox {
-	return inboxEntity.NotificationInbox{
-		ID:                m.ID,
-		UserID:            m.UserID,
-		NotificationLogID: m.NotificationLogID,
-		IsRead:            m.IsRead,
-		ReadAt:            m.ReadAt,
-		CreatedAt:         m.CreatedAt,
-	}
-}

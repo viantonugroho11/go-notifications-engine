@@ -26,7 +26,7 @@ func NewNotificationLogService(repo repolog.NotificationLogRepository) Notificat
 }
 
 func (s *notificationLogService) Create(ctx context.Context, l logEntity.NotificationLog) (logEntity.NotificationLog, error) {
-	if err := validateLog(l, true); err != nil {
+	if err := validateLog(l); err != nil {
 		return logEntity.NotificationLog{}, err
 	}
 	if l.CreatedAt.IsZero() {
@@ -53,7 +53,7 @@ func (s *notificationLogService) Update(ctx context.Context, l logEntity.Notific
 	if strings.TrimSpace(l.ID) == "" {
 		return logEntity.NotificationLog{}, ErrIDRequired
 	}
-	if err := validateLog(l, false); err != nil {
+	if err := validateLog(l); err != nil {
 		return logEntity.NotificationLog{}, err
 	}
 	return s.repo.Update(ctx, l)
@@ -66,17 +66,17 @@ func (s *notificationLogService) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func validateLog(l logEntity.NotificationLog, creating bool) error {
+func validateLog(l logEntity.NotificationLog) error {
 	if strings.TrimSpace(l.NotificationID) == "" {
 		return ErrNotificationIDRequired
 	}
 	if strings.TrimSpace(l.UserID) == "" {
 		return ErrUserIDRequired
 	}
-	if strings.TrimSpace(l.Channel) == "" {
-		return ErrChannelRequired
-	}
-	if strings.TrimSpace(l.State) == "" {
+	// if strings.TrimSpace(l.Channel.String()) == "" {
+	// 	return ErrChannelRequired
+	// }
+	if strings.TrimSpace(l.State.String()) == "" {
 		return ErrStateRequired
 	}
 	return nil

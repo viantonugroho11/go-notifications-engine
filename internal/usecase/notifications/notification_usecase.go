@@ -7,6 +7,8 @@ import (
 
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
 	reponotif "go-boilerplate-clean/internal/repository/notification"
+	repotpl "go-boilerplate-clean/internal/repository/notificationtemplate"
+	"go-boilerplate-clean/internal/shared/schema"
 )
 
 type NotificationService interface {
@@ -19,6 +21,8 @@ type NotificationService interface {
 
 type notificationService struct {
 	repo reponotif.NotificationRepository
+	repoTemplate repotpl.NotificationTemplateRepository
+
 }
 
 func NewNotificationService(repo reponotif.NotificationRepository) NotificationService {
@@ -35,7 +39,23 @@ func (s *notificationService) Create(ctx context.Context, n notifEntity.Notifica
 	if n.CreatedBy == "" {
 		n.CreatedBy = "system"
 	}
-	return s.repo.Create(ctx, n)
+	template, err := s.repoTemplate.GetByID(ctx, n.NotificationTemplateID)
+	if err != nil {
+		return notifEntity.Notification{}, err
+	}
+
+	// validate payload schema
+	if err := schema.ValidatePayloadSchema(template.PayloadSchema, n.Data); err != nil {
+		return notifEntity.Notification{}, err
+	}
+
+	// create notification logs
+	n, err = s.repo.Create(ctx, n)
+	if err != nil {
+		return notifEntity.Notification{}, err
+	}
+
+	return n, nil
 }
 
 func (s *notificationService) GetByID(ctx context.Context, id string) (notifEntity.Notification, error) {
@@ -75,7 +95,7 @@ func validateNotification(n notifEntity.Notification, creating bool) error {
 	if strings.TrimSpace(n.NotificationTemplateID) == "" {
 		return ErrTemplateIDRequired
 	}
-	if strings.TrimSpace(n.Category) == "" {
+	if strings.TrimSpace(n.Category.String()) == "" {
 		return ErrCategoryRequired
 	}
 	if strings.TrimSpace(n.State) == "" {
@@ -83,6 +103,8 @@ func validateNotification(n notifEntity.Notification, creating bool) error {
 	}
 	return nil
 }
+
+
 
 var (
 	ErrIDRequired         = newValidationError("id is required")
