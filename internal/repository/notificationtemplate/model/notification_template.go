@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"encoding/json"
+	notificationtemplates "go-boilerplate-clean/internal/entity/notificationtemplates"
+	"time"
+)
 
 type NotificationTemplate struct {
 	ID            string     `gorm:"column:id;primaryKey"`
@@ -17,4 +21,40 @@ type NotificationTemplate struct {
 
 func (NotificationTemplate) TableName() string {
 	return "notification_templates"
+}
+
+
+func (n NotificationTemplate) ToEntity() notificationtemplates.NotificationTemplate {
+	var payloadSchema map[string]interface{}
+	if len(n.PayloadSchema) > 0 {
+		_ = json.Unmarshal(n.PayloadSchema, &payloadSchema)
+	}
+	return notificationtemplates.NotificationTemplate{
+		ID: n.ID,
+		Name: n.Name,
+		Subject: n.Subject,
+		Body: n.Body,
+		PayloadSchema: payloadSchema,
+		Channel: n.Channel,
+		TemplateType: n.TemplateType,
+		CreatedAt: n.CreatedAt,
+		UpdatedAt: n.UpdatedAt,
+		DeletedAt: n.DeletedAt,
+	}
+}
+
+func ToDBNotificationTemplate(t notificationtemplates.NotificationTemplate) NotificationTemplate {
+	schemaJSON, _ := json.Marshal(t.PayloadSchema)
+	return NotificationTemplate{
+		ID: t.ID,
+		Name: t.Name,
+		Subject: t.Subject,
+		Body: t.Body,
+		PayloadSchema: schemaJSON,
+		Channel: t.Channel,
+		TemplateType: t.TemplateType,
+		CreatedAt: t.CreatedAt,
+		UpdatedAt: t.UpdatedAt,
+		DeletedAt: t.DeletedAt,
+	}
 }
