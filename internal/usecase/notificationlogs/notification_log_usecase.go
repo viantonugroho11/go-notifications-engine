@@ -12,7 +12,7 @@ import (
 type NotificationLogService interface {
 	Create(ctx context.Context, l logEntity.NotificationLog) (logEntity.NotificationLog, error)
 	GetByID(ctx context.Context, id string) (logEntity.NotificationLog, error)
-	List(ctx context.Context) ([]logEntity.NotificationLog, error)
+	List(ctx context.Context, param *logEntity.NotificationLogListParam) ([]logEntity.NotificationLog, error)
 	Update(ctx context.Context, l logEntity.NotificationLog) (logEntity.NotificationLog, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -45,8 +45,8 @@ func (s *notificationLogService) GetByID(ctx context.Context, id string) (logEnt
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *notificationLogService) List(ctx context.Context) ([]logEntity.NotificationLog, error) {
-	return s.repo.List(ctx)
+func (s *notificationLogService) List(ctx context.Context, param *logEntity.NotificationLogListParam) ([]logEntity.NotificationLog, error) {
+	return s.repo.List(ctx, param)
 }
 
 func (s *notificationLogService) Update(ctx context.Context, l logEntity.NotificationLog) (logEntity.NotificationLog, error) {

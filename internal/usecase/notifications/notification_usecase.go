@@ -14,15 +14,14 @@ import (
 type NotificationService interface {
 	Create(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error)
 	GetByID(ctx context.Context, id string) (notifEntity.Notification, error)
-	List(ctx context.Context) ([]notifEntity.Notification, error)
+	List(ctx context.Context, param *notifEntity.NotificationListParam) ([]notifEntity.Notification, error)
 	Update(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error)
 	Delete(ctx context.Context, id string) error
 }
 
 type notificationService struct {
-	repo reponotif.NotificationRepository
+	repo         reponotif.NotificationRepository
 	repoTemplate repotpl.NotificationTemplateRepository
-
 }
 
 func NewNotificationService(repo reponotif.NotificationRepository) NotificationService {
@@ -30,6 +29,10 @@ func NewNotificationService(repo reponotif.NotificationRepository) NotificationS
 }
 
 func (s *notificationService) Create(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error) {
+	var (
+		renderedSubject string
+		renderedMessage string
+	)
 	if err := validateNotification(n, true); err != nil {
 		return notifEntity.Notification{}, err
 	}
@@ -48,8 +51,15 @@ func (s *notificationService) Create(ctx context.Context, n notifEntity.Notifica
 	if err := schema.ValidatePayloadSchema(template.PayloadSchema, n.Data); err != nil {
 		return notifEntity.Notification{}, err
 	}
+	renderedSubject = n.GenerateRenderedMessage(template.Subject)
+	renderedMessage = n.GenerateRenderedMessage(template.Body)
 
 	// create notification logs
+	for i := range n.NotificationLogs {
+		n.NotificationLogs[i].RenderedSubject = renderedSubject
+		n.NotificationLogs[i].RenderedMessage = renderedMessage
+		n.NotificationLogs[i].CreatedAt = time.Now()
+	}
 	n, err = s.repo.Create(ctx, n)
 	if err != nil {
 		return notifEntity.Notification{}, err
@@ -65,8 +75,8 @@ func (s *notificationService) GetByID(ctx context.Context, id string) (notifEnti
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *notificationService) List(ctx context.Context) ([]notifEntity.Notification, error) {
-	return s.repo.List(ctx)
+func (s *notificationService) List(ctx context.Context, param *notifEntity.NotificationListParam) ([]notifEntity.Notification, error) {
+	return s.repo.List(ctx, param)
 }
 
 func (s *notificationService) Update(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error) {
@@ -104,8 +114,6 @@ func validateNotification(n notifEntity.Notification, creating bool) error {
 	return nil
 }
 
-
-
 var (
 	ErrIDRequired         = newValidationError("id is required")
 	ErrEventKeyRequired   = newValidationError("event_key is required")
@@ -117,4 +125,4 @@ var (
 type validationError struct{ msg string }
 
 func newValidationError(msg string) error { return &validationError{msg: msg} }
-func (e *validationError) Error() string { return e.msg }
+func (e *validationError) Error() string  { return e.msg }

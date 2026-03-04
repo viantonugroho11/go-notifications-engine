@@ -2,6 +2,8 @@ CREATE TABLE notification_inbox (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     notification_log_id UUID NOT NULL,
+    message TEXT,
+    subject TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     read_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT now(),

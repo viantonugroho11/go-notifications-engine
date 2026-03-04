@@ -12,7 +12,7 @@ import (
 type NotificationInboxService interface {
 	Create(ctx context.Context, i inboxEntity.NotificationInbox) (inboxEntity.NotificationInbox, error)
 	GetByID(ctx context.Context, id string) (inboxEntity.NotificationInbox, error)
-	List(ctx context.Context) ([]inboxEntity.NotificationInbox, error)
+	List(ctx context.Context, param *inboxEntity.NotificationInboxListParam) ([]inboxEntity.NotificationInbox, error)
 	Update(ctx context.Context, i inboxEntity.NotificationInbox) (inboxEntity.NotificationInbox, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -42,8 +42,8 @@ func (s *notificationInboxService) GetByID(ctx context.Context, id string) (inbo
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *notificationInboxService) List(ctx context.Context) ([]inboxEntity.NotificationInbox, error) {
-	return s.repo.List(ctx)
+func (s *notificationInboxService) List(ctx context.Context, param *inboxEntity.NotificationInboxListParam) ([]inboxEntity.NotificationInbox, error) {
+	return s.repo.List(ctx, param)
 }
 
 func (s *notificationInboxService) Update(ctx context.Context, i inboxEntity.NotificationInbox) (inboxEntity.NotificationInbox, error) {

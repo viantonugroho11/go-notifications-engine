@@ -1,7 +1,9 @@
 package notifications
 
 import (
+	"bytes"
 	"go-boilerplate-clean/internal/entity/notificationlogs"
+	"text/template"
 	"time"
 )
 
@@ -62,4 +64,35 @@ const (
 
 func (s State) String() string {
 	return string(s)
+}
+
+// NotificationListParam dipakai untuk filter dan pagination List notification.
+type NotificationListParam struct {
+	IDs                     []string
+	EventKey                string
+	NotificationTemplateID  string
+	Channel                 string
+	Categories              []string
+	States                  []string
+	Page, Limit, Offset     int
+}
+
+// message template
+func (n *Notification) GenerateRenderedMessage(messageTemplate string) string {
+	t, err := template.New("tmpl").
+		Option("missingkey=zero").
+		Parse(messageTemplate)
+
+	if err != nil {
+		return ""
+	}
+
+	var buf bytes.Buffer
+
+	err = t.Execute(&buf, n.Data)
+	if err != nil {
+		return ""
+	}
+
+	return buf.String()
 }

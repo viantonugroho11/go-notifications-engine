@@ -36,11 +36,13 @@ func (r *notificationLogRepository) GetByID(ctx context.Context, id string) (log
 	return m.ToEntity(), err
 }
 
-func (r *notificationLogRepository) List(ctx context.Context) ([]logEntity.NotificationLog, error) {
+func (r *notificationLogRepository) List(ctx context.Context, param *logEntity.NotificationLogListParam) ([]logEntity.NotificationLog, error) {
 	var rows []model.NotificationLog
-	if err := r.db.WithContext(ctx).
-		Order("created_at DESC").
-		Find(&rows).Error; err != nil {
+	q := model.ApplyListParam(
+		r.db.WithContext(ctx).Model(&model.NotificationLog{}).Order("created_at DESC"),
+		param,
+	)
+	if err := q.Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	result := make([]logEntity.NotificationLog, 0, len(rows))

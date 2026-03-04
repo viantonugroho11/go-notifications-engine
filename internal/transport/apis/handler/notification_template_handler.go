@@ -40,7 +40,8 @@ func (h *NotificationTemplateHandler) GetByID(c echo.Context) error {
 }
 
 func (h *NotificationTemplateHandler) List(c echo.Context) error {
-	list, err := h.service.List(c.Request().Context())
+	param := dto.NotificationTemplateListParamFromQuery(c)
+	list, err := h.service.List(c.Request().Context(), param)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -60,7 +61,7 @@ func (h *NotificationTemplateHandler) Update(c echo.Context) error {
 		Body:          req.Body,
 		PayloadSchema: req.PayloadSchema,
 		Channel:       req.Channel,
-		TemplateType:  req.TemplateType,
+		TemplateType:  tplEntity.TemplateType(req.TemplateType),
 	})
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})

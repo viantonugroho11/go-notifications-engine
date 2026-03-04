@@ -7,12 +7,13 @@ import (
 
 	tplEntity "go-boilerplate-clean/internal/entity/notificationtemplates"
 	repotpl "go-boilerplate-clean/internal/repository/notificationtemplate"
+	"go-boilerplate-clean/internal/shared/schema"
 )
 
 type NotificationTemplateService interface {
 	Create(ctx context.Context, t tplEntity.NotificationTemplate) (tplEntity.NotificationTemplate, error)
 	GetByID(ctx context.Context, id string) (tplEntity.NotificationTemplate, error)
-	List(ctx context.Context) ([]tplEntity.NotificationTemplate, error)
+	List(ctx context.Context, param *tplEntity.NotificationTemplateListParam) ([]tplEntity.NotificationTemplate, error)
 	Update(ctx context.Context, t tplEntity.NotificationTemplate) (tplEntity.NotificationTemplate, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -32,6 +33,13 @@ func (s *notificationTemplateService) Create(ctx context.Context, t tplEntity.No
 	if t.CreatedAt.IsZero() {
 		t.CreatedAt = time.Now()
 	}
+
+	if err := schema.ValidateTemplateSchema(t.PayloadSchema); err != nil {
+		return tplEntity.NotificationTemplate{}, err
+	}
+
+
+
 	return s.repo.Create(ctx, t)
 }
 
@@ -42,8 +50,8 @@ func (s *notificationTemplateService) GetByID(ctx context.Context, id string) (t
 	return s.repo.GetByID(ctx, id)
 }
 
-func (s *notificationTemplateService) List(ctx context.Context) ([]tplEntity.NotificationTemplate, error) {
-	return s.repo.List(ctx)
+func (s *notificationTemplateService) List(ctx context.Context, param *tplEntity.NotificationTemplateListParam) ([]tplEntity.NotificationTemplate, error) {
+	return s.repo.List(ctx, param)
 }
 
 func (s *notificationTemplateService) Update(ctx context.Context, t tplEntity.NotificationTemplate) (tplEntity.NotificationTemplate, error) {

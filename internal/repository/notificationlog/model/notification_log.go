@@ -4,6 +4,8 @@ import (
 	// "encoding/json"
 	"go-boilerplate-clean/internal/entity/notificationlogs"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type NotificationLog struct {
@@ -62,4 +64,27 @@ func ToDBNotificationLog(l notificationlogs.NotificationLog) NotificationLog {
 		SentAt: l.SentAt,
 		CreatedAt: l.CreatedAt,
 	}
+}
+
+// ApplyListParam menerapkan filter dan pagination dari param ke query. Jika param nil, query tidak diubah.
+func ApplyListParam(query *gorm.DB, param *notificationlogs.NotificationLogListParam) *gorm.DB {
+	if param == nil {
+		return query
+	}
+	if len(param.IDs) > 0 {
+		query = query.Where("id IN (?)", param.IDs)
+	}
+	if param.NotificationID != "" {
+		query = query.Where("notification_id = ?", param.NotificationID)
+	}
+	if param.UserID != "" {
+		query = query.Where("user_id = ?", param.UserID)
+	}
+	if len(param.States) > 0 {
+		query = query.Where("state IN (?)", param.States)
+	}
+	if param.Limit > 0 || param.Offset > 0 {
+		query = query.Limit(param.Limit).Offset(param.Offset)
+	}
+	return query
 }

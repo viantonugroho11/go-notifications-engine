@@ -46,11 +46,13 @@ func (r *notificationRepository) GetByID(ctx context.Context, id string) (notifE
 	return m.ToEntity(), err
 }
 
-func (r *notificationRepository) List(ctx context.Context) ([]notifEntity.Notification, error) {
+func (r *notificationRepository) List(ctx context.Context, param *notifEntity.NotificationListParam) ([]notifEntity.Notification, error) {
 	var rows []model.Notification
-	if err := r.db.WithContext(ctx).
-		Preload("NotificationLogs").
-		Find(&rows).Error; err != nil {
+	q := model.ApplyListParam(
+		r.db.WithContext(ctx).Model(&model.Notification{}).Preload("NotificationLogs"),
+		param,
+	)
+	if err := q.Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	result := make([]notifEntity.Notification, 0, len(rows))

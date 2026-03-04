@@ -40,7 +40,8 @@ func (h *NotificationLogHandler) GetByID(c echo.Context) error {
 }
 
 func (h *NotificationLogHandler) List(c echo.Context) error {
-	list, err := h.service.List(c.Request().Context())
+	param := dto.NotificationLogListParamFromQuery(c)
+	list, err := h.service.List(c.Request().Context(), param)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

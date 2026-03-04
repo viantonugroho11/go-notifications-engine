@@ -37,9 +37,13 @@ func (r *notificationInboxRepository) GetByID(ctx context.Context, id string) (i
 	return m.ToEntity(), err
 }
 
-func (r *notificationInboxRepository) List(ctx context.Context) ([]inboxEntity.NotificationInbox, error) {
+func (r *notificationInboxRepository) List(ctx context.Context, param *inboxEntity.NotificationInboxListParam) ([]inboxEntity.NotificationInbox, error) {
 	var rows []model.NotificationInbox
-	if err := r.db.WithContext(ctx).Order("created_at DESC").Find(&rows).Error; err != nil {
+	q := model.ApplyListParam(
+		r.db.WithContext(ctx).Model(&model.NotificationInbox{}).Order("created_at DESC"),
+		param,
+	)
+	if err := q.Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	result := make([]inboxEntity.NotificationInbox, 0, len(rows))

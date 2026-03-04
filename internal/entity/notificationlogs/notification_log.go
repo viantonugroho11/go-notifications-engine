@@ -50,3 +50,12 @@ const (
 func (c Channel) String() string {
 	return string(c)
 }
+
+// NotificationLogListParam dipakai untuk filter dan pagination List notification log.
+type NotificationLogListParam struct {
+	IDs            []string
+	NotificationID string
+	UserID         string
+	States         []string
+	Limit, Offset  int
+}

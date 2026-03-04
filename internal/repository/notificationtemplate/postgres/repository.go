@@ -34,9 +34,13 @@ func (r *notificationTemplateRepository) GetByID(ctx context.Context, id string)
 	return m.ToEntity(), err
 }
 
-func (r *notificationTemplateRepository) List(ctx context.Context) ([]tplEntity.NotificationTemplate, error) {
+func (r *notificationTemplateRepository) List(ctx context.Context, param *tplEntity.NotificationTemplateListParam) ([]tplEntity.NotificationTemplate, error) {
 	var rows []model.NotificationTemplate
-	if err := r.db.WithContext(ctx).Order("created_at DESC").Find(&rows).Error; err != nil {
+	q := model.ApplyListParam(
+		r.db.WithContext(ctx).Model(&model.NotificationTemplate{}).Order("created_at DESC"),
+		param,
+	)
+	if err := q.Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	result := make([]tplEntity.NotificationTemplate, 0, len(rows))

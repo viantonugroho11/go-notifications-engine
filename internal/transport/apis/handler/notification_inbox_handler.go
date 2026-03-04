@@ -40,7 +40,8 @@ func (h *NotificationInboxHandler) GetByID(c echo.Context) error {
 }
 
 func (h *NotificationInboxHandler) List(c echo.Context) error {
-	list, err := h.service.List(c.Request().Context())
+	param := dto.NotificationInboxListParamFromQuery(c)
+	list, err := h.service.List(c.Request().Context(), param)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

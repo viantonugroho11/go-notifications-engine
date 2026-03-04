@@ -6,6 +6,8 @@ import (
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
 	notifLogModel "go-boilerplate-clean/internal/repository/notificationlog/model"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Notification struct {
@@ -82,4 +84,33 @@ func ToEntityNotificationLogs(logs []notifLogModel.NotificationLog) []notificati
 		notificationLogs = append(notificationLogs, l.ToEntity())
 	}
 	return notificationLogs
+}
+
+// ApplyListParam menerapkan filter dan pagination dari param ke query. Jika param nil, query tidak diubah.
+func ApplyListParam(query *gorm.DB, param *notifEntity.NotificationListParam) *gorm.DB {
+	if param == nil {
+		return query
+	}
+	if len(param.IDs) > 0 {
+		query = query.Where("id IN (?)", param.IDs)
+	}
+	if param.EventKey != "" {
+		query = query.Where("event_key = ?", param.EventKey)
+	}
+	if param.NotificationTemplateID != "" {
+		query = query.Where("notification_template_id = ?", param.NotificationTemplateID)
+	}
+	if param.Channel != "" {
+		query = query.Where("channel = ?", param.Channel)
+	}
+	if len(param.Categories) > 0 {
+		query = query.Where("category IN (?)", param.Categories)
+	}
+	if len(param.States) > 0 {
+		query = query.Where("state IN (?)", param.States)
+	}
+	if param.Limit > 0 || param.Offset > 0 {
+		query = query.Limit(param.Limit).Offset(param.Offset)
+	}
+	return query
 }

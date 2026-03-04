@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	notificationtemplates "go-boilerplate-clean/internal/entity/notificationtemplates"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type NotificationTemplate struct {
@@ -36,7 +38,7 @@ func (n NotificationTemplate) ToEntity() notificationtemplates.NotificationTempl
 		Body: n.Body,
 		PayloadSchema: payloadSchema,
 		Channel: n.Channel,
-		TemplateType: n.TemplateType,
+		TemplateType: notificationtemplates.TemplateType(n.TemplateType),
 		CreatedAt: n.CreatedAt,
 		UpdatedAt: n.UpdatedAt,
 		DeletedAt: n.DeletedAt,
@@ -52,9 +54,33 @@ func ToDBNotificationTemplate(t notificationtemplates.NotificationTemplate) Noti
 		Body: t.Body,
 		PayloadSchema: schemaJSON,
 		Channel: t.Channel,
-		TemplateType: t.TemplateType,
+		TemplateType: t.TemplateType.String(),
 		CreatedAt: t.CreatedAt,
 		UpdatedAt: t.UpdatedAt,
 		DeletedAt: t.DeletedAt,
 	}
 }
+
+// ApplyListParam menerapkan filter dan pagination dari param ke query. Jika param nil, query tidak diubah.
+func ApplyListParam(query *gorm.DB, param *notificationtemplates.NotificationTemplateListParam) *gorm.DB {
+	if param == nil {
+		return query
+	}
+	if len(param.IDs) > 0 {
+		query = query.Where("id IN (?)", param.IDs)
+	}
+	if param.Name != "" {
+		query = query.Where("name = ?", param.Name)
+	}
+	if param.Channel != "" {
+		query = query.Where("channel = ?", param.Channel)
+	}
+	if len(param.TemplateTypes) > 0 {
+		query = query.Where("template_type IN (?)", param.TemplateTypes)
+	}
+	if param.Limit > 0 || param.Offset > 0 {
+		query = query.Limit(param.Limit).Offset(param.Offset)
+	}
+	return query
+}
+
