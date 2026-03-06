@@ -14,7 +14,7 @@ type Notification struct {
 	Data                   map[string]interface{}             `json:"data,omitempty"`
 	Category               Category                           `json:"category"`
 	Channel                Channel                            `json:"channel"`
-	State                  string                             `json:"state"`
+	State                  State                             `json:"state"`
 	ScheduleAt             *time.Time                         `json:"schedule_at,omitempty"`
 	CreatedBy              string                             `json:"created_by"`
 	UpdatedBy              string                             `json:"updated_by,omitempty"`
@@ -50,6 +50,10 @@ const (
 	ChannelKakao    Channel = "kakao"
 )
 
+func (c Channel) String() string {
+	return string(c)
+}
+
 type State string
 
 const (
@@ -68,13 +72,13 @@ func (s State) String() string {
 
 // NotificationListParam dipakai untuk filter dan pagination List notification.
 type NotificationListParam struct {
-	IDs                     []string
-	EventKey                string
-	NotificationTemplateID  string
-	Channel                 string
-	Categories              []string
-	States                  []string
-	Page, Limit, Offset     int
+	IDs                    []string
+	EventKey               string
+	NotificationTemplateID string
+	Channel                string
+	Categories             []string
+	States                 []string
+	Page, Limit, Offset    int
 }
 
 // message template
@@ -95,4 +99,51 @@ func (n *Notification) GenerateRenderedMessage(messageTemplate string) string {
 	}
 
 	return buf.String()
+}
+
+type NotificationProducerMessage struct {
+	NotificationID         string                             `json:"notification_id"`
+	EventKey               string                             `json:"event_key"`
+	NotificationTemplateID string                             `json:"notification_template_id"`
+	Data                   map[string]interface{}             `json:"data,omitempty"`
+	Channel                string                             `json:"channel"`
+	Category               string                             `json:"category"`
+	State                  string                             `json:"state"`
+	ScheduleAt             *time.Time                         `json:"schedule_at,omitempty"`
+	CreatedBy              string                             `json:"created_by,omitempty"`
+	UpdatedBy              string                             `json:"updated_by,omitempty"`
+	NotificationLogs       []notificationlogs.NotificationLog `json:"notification_logs,omitempty"`
+}
+
+func (n *Notification) ToProducerMessage() NotificationProducerMessage {
+	return NotificationProducerMessage{
+		NotificationID:         n.ID,
+		EventKey:               n.EventKey,
+		NotificationTemplateID: n.NotificationTemplateID,
+		Data:                   n.Data,
+		Channel:                n.Channel.String(),
+		Category:               n.Category.String(),
+		State:                  n.State.String(),
+		ScheduleAt:             n.ScheduleAt,
+		CreatedBy:              n.CreatedBy,
+		UpdatedBy:              n.UpdatedBy,
+		NotificationLogs:       n.NotificationLogs,
+	}
+}
+
+// ToNotification mengonversi NotificationProducerMessage (dari event Kafka) ke entity Notification untuk update.
+func (m *NotificationProducerMessage) ToNotification() Notification {
+	return Notification{
+		ID:                     m.NotificationID,
+		EventKey:               m.EventKey,
+		NotificationTemplateID: m.NotificationTemplateID,
+		Data:                   m.Data,
+		Channel:                Channel(m.Channel),
+		Category:               Category(m.Category),
+		State:                  State(m.State),
+		ScheduleAt:             m.ScheduleAt,
+		CreatedBy:              m.CreatedBy,
+		UpdatedBy:              m.UpdatedBy,
+		NotificationLogs:       m.NotificationLogs,
+	}
 }

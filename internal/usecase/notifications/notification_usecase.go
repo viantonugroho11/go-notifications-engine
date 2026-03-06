@@ -2,10 +2,12 @@ package notifications
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	"go-boilerplate-clean/internal/infrastructure/broker"
 	reponotif "go-boilerplate-clean/internal/repository/notification"
 	repotpl "go-boilerplate-clean/internal/repository/notificationtemplate"
 	"go-boilerplate-clean/internal/shared/schema"
@@ -22,10 +24,17 @@ type NotificationService interface {
 type notificationService struct {
 	repo         reponotif.NotificationRepository
 	repoTemplate repotpl.NotificationTemplateRepository
+	producer     broker.Producer
+	topic        string
 }
 
-func NewNotificationService(repo reponotif.NotificationRepository) NotificationService {
-	return &notificationService{repo: repo}
+func NewNotificationService(repo reponotif.NotificationRepository, repoTemplate repotpl.NotificationTemplateRepository, producer broker.Producer, topic string) NotificationService {
+	return &notificationService{
+		repo:         repo,
+		repoTemplate: repoTemplate,
+		producer:     producer,
+		topic:        topic,
+	}
 }
 
 func (s *notificationService) Create(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error) {
@@ -64,7 +73,10 @@ func (s *notificationService) Create(ctx context.Context, n notifEntity.Notifica
 	if err != nil {
 		return notifEntity.Notification{}, err
 	}
-
+	if err := s.publishNotificationEvent(ctx, n); err != nil {
+		// log saja, jangan gagalkan create
+		_ = err
+	}
 	return n, nil
 }
 
@@ -88,7 +100,27 @@ func (s *notificationService) Update(ctx context.Context, n notifEntity.Notifica
 	}
 	now := time.Now()
 	n.UpdatedAt = &now
-	return s.repo.Update(ctx, n)
+	updated, err := s.repo.Update(ctx, n)
+	if err != nil {
+		return notifEntity.Notification{}, err
+	}
+	if err := s.publishNotificationEvent(ctx, updated); err != nil {
+		_ = err
+	}
+	return updated, nil
+}
+
+func (s *notificationService) publishNotificationEvent(ctx context.Context, n notifEntity.Notification) error {
+	if s.producer == nil || s.topic == "" {
+		return nil
+	}
+	msg := n.ToProducerMessage()
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	_, _, err = s.producer.Publish(ctx, s.topic, []byte(n.ID), payload)
+	return err
 }
 
 func (s *notificationService) Delete(ctx context.Context, id string) error {
@@ -108,7 +140,7 @@ func validateNotification(n notifEntity.Notification, creating bool) error {
 	if strings.TrimSpace(n.Category.String()) == "" {
 		return ErrCategoryRequired
 	}
-	if strings.TrimSpace(n.State) == "" {
+	if strings.TrimSpace(n.State.String()) == "" {
 		return ErrStateRequired
 	}
 	return nil

@@ -11,6 +11,7 @@ require (
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/viantonugroho11/go-config-library v0.5.1
+	github.com/viantonugroho11/go-lib/kafka v0.1.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	google.golang.org/api v0.248.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df

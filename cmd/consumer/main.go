@@ -8,11 +8,15 @@ import (
 	"syscall"
 
 	"go-boilerplate-clean/internal/config"
-	kafkainfra "go-boilerplate-clean/internal/infrastructure/broker/kafka"
-	kafkarunner "go-boilerplate-clean/internal/transport/event/kafka"
+	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	pginfra "go-boilerplate-clean/internal/infrastructure/database/postgres"
+	notifpg "go-boilerplate-clean/internal/repository/notification/postgres"
+	tplpg "go-boilerplate-clean/internal/repository/notificationtemplate/postgres"
+	eventhandler "go-boilerplate-clean/internal/transport/event/kafka/handler"
+	usecasenotif "go-boilerplate-clean/internal/usecase/notifications"
 
-	"github.com/IBM/sarama"
 	confLoader "github.com/viantonugroho11/go-config-library"
+	kafka "github.com/viantonugroho11/go-lib/kafka"
 )
 
 func main() {
@@ -29,27 +33,43 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Initialize Kafka Consumer
-	consumerHandler := func(ctx context.Context, msg *sarama.ConsumerMessage) error {
-		return kafkarunner.ExampleHandler(ctx, msg.Key, msg.Value)
+	// DB untuk notification update dari event (consumer tidak publish, producer=nil)
+	db, err := pginfra.Connect(ctx, cfg.PGDSN())
+	if err != nil {
+		log.Fatalf("db connect error: %v", err)
 	}
-	consumer, err := kafkainfra.NewConsumer(
-		cfg.KafkaBrokersList(),
-		cfg.Kafka.GroupID,
-		cfg.Kafka.Topic,
-		consumerHandler,
-	)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+	if err := pginfra.Migrate(db); err != nil {
+		log.Fatalf("db migrate error: %v", err)
+	}
+	notificationRepo := notifpg.NewNotificationRepository(db)
+	templateRepo := tplpg.NewNotificationTemplateRepository(db)
+	notificationService := usecasenotif.NewNotificationService(notificationRepo, templateRepo, nil, "")
+
+	// Handler didaftarkan per key; consumer memakai go-lib/kafka EventHandler[NotificationProducerMessage]
+	consumerConfigs := []eventhandler.ConsumerConfig{
+		{Topic: cfg.Kafka.Topic, GroupID: cfg.Kafka.GroupID, HandlerKey: "notification"},
+	}
+	if cfg.Kafka.TopicSent != "" {
+		consumerConfigs = append(consumerConfigs, eventhandler.ConsumerConfig{
+			Topic: cfg.Kafka.TopicSent, GroupID: cfg.Kafka.GroupID + "-sent", HandlerKey: "sent",
+		})
+	}
+	var sentSender eventhandler.NotificationSender
+	kafkaHandlers := map[string]kafka.EventHandler[notifEntity.NotificationProducerMessage]{
+		"notification": eventhandler.NewNotificationUpdateHandler(notificationService),
+		"sent":         eventhandler.NewNotificationSentHandler(sentSender),
+	}
+	consumers, err := eventhandler.RegisterConsumers(ctx, cfg.KafkaBrokersList(), consumerConfigs, kafkaHandlers)
 	if err != nil {
 		log.Fatalf("kafka consumer init error: %v", err)
 	}
 	defer func() {
-		if cerr := consumer.Close(); cerr != nil {
-			log.Printf("kafka consumer close error: %v", cerr)
+		if cerr := consumers.Close(); cerr != nil {
+			log.Printf("kafka consumers close error: %v", cerr)
 		}
 	}()
-
-	// Start consuming
-	kafkarunner.RegisterConsumers(ctx, consumer)
 	log.Printf("consumer started, group=%s topic=%s", cfg.Kafka.GroupID, cfg.Kafka.Topic)
 
 	// Wait for termination signals

@@ -19,14 +19,12 @@ import (
 	tplpg "go-boilerplate-clean/internal/repository/notificationtemplate/postgres"
 	userpg "go-boilerplate-clean/internal/repository/user/postgres"
 	"go-boilerplate-clean/internal/transport/apis"
-	kafkarunner "go-boilerplate-clean/internal/transport/event/kafka"
 	usecaseinbox "go-boilerplate-clean/internal/usecase/notificationinbox"
 	usecaselog "go-boilerplate-clean/internal/usecase/notificationlogs"
 	usecasenotif "go-boilerplate-clean/internal/usecase/notifications"
 	usecasetpl "go-boilerplate-clean/internal/usecase/notificationtemplates"
 	usecaseusers "go-boilerplate-clean/internal/usecase/users"
 
-	"github.com/IBM/sarama"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	confLoader "github.com/viantonugroho11/go-config-library"
@@ -61,10 +59,16 @@ func main() {
 	userRepo := userpg.NewUserRepository(db)
 	userService := usecaseusers.NewUserService(userRepo)
 
-	notificationRepo := notifpg.NewNotificationRepository(db)
-	notificationService := usecasenotif.NewNotificationService(notificationRepo)
+	// Init Kafka Producer (dipakai notification service untuk publish event)
+	producer, err := kafkainfra.NewProducer(cfg.KafkaBrokersList(), cfg.Kafka.ClientID)
+	if err != nil {
+		log.Fatalf("kafka producer init error: %v", err)
+	}
+	defer producer.Close()
 
+	notificationRepo := notifpg.NewNotificationRepository(db)
 	templateRepo := tplpg.NewNotificationTemplateRepository(db)
+	notificationService := usecasenotif.NewNotificationService(notificationRepo, templateRepo, producer, cfg.Kafka.Topic)
 	templateService := usecasetpl.NewNotificationTemplateService(templateRepo)
 
 	logRepo := logpg.NewNotificationLogRepository(db)
@@ -88,23 +92,6 @@ func main() {
 	}
 	defer redisClient.Close()
 
-	// Init Kafka Producer
-	producer, err := kafkainfra.NewProducer(cfg.KafkaBrokersList(), cfg.Kafka.ClientID)
-	if err != nil {
-		log.Fatalf("kafka producer init error: %v", err)
-	}
-	defer producer.Close()
-
-	// Init Kafka Consumer
-	consumerHandler := func(ctx context.Context, msg *sarama.ConsumerMessage) error {
-		return kafkarunner.ExampleHandler(ctx, msg.Key, msg.Value)
-	}
-	consumer, err := kafkainfra.NewConsumer(cfg.KafkaBrokersList(), cfg.Kafka.GroupID, cfg.Kafka.Topic, consumerHandler)
-	if err != nil {
-		log.Fatalf("kafka consumer init error: %v", err)
-	}
-	kafkarunner.RegisterConsumers(ctx, consumer)
-	defer consumer.Close()
 
 	// HTTP server with graceful shutdown
 	server := &http.Server{

@@ -61,7 +61,7 @@ func (h *NotificationHandler) Update(c echo.Context) error {
 		NotificationTemplateID: req.NotificationTemplateID,
 		Data:                   req.Data,
 		Category:               notifications.Category(req.Category),
-		State:                  req.State,
+		State:                  notifEntity.State(req.State),
 		ScheduleAt:             req.ScheduleAt,
 		UpdatedBy:              req.UpdatedBy,
 	})
