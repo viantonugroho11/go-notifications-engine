@@ -2,16 +2,19 @@ package notifications
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 	"time"
 
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	"go-boilerplate-clean/internal/infrastructure/broker"
 	reponotif "go-boilerplate-clean/internal/repository/notification"
 	repotpl "go-boilerplate-clean/internal/repository/notificationtemplate"
 	"go-boilerplate-clean/internal/shared/schema"
 )
+
+// NotificationEventPublisher mempublish event notifikasi ke Kafka (mis. via go-lib/kafka Producer).
+type NotificationEventPublisher interface {
+	Publish(ctx context.Context, msg notifEntity.NotificationProducerMessage) error
+}
 
 type NotificationService interface {
 	Create(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error)
@@ -24,16 +27,14 @@ type NotificationService interface {
 type notificationService struct {
 	repo         reponotif.NotificationRepository
 	repoTemplate repotpl.NotificationTemplateRepository
-	producer     broker.Producer
-	topic        string
+	publisher    NotificationEventPublisher
 }
 
-func NewNotificationService(repo reponotif.NotificationRepository, repoTemplate repotpl.NotificationTemplateRepository, producer broker.Producer, topic string) NotificationService {
+func NewNotificationService(repo reponotif.NotificationRepository, repoTemplate repotpl.NotificationTemplateRepository, publisher NotificationEventPublisher) NotificationService {
 	return &notificationService{
 		repo:         repo,
 		repoTemplate: repoTemplate,
-		producer:     producer,
-		topic:        topic,
+		publisher:    publisher,
 	}
 }
 
@@ -111,16 +112,10 @@ func (s *notificationService) Update(ctx context.Context, n notifEntity.Notifica
 }
 
 func (s *notificationService) publishNotificationEvent(ctx context.Context, n notifEntity.Notification) error {
-	if s.producer == nil || s.topic == "" {
+	if s.publisher == nil {
 		return nil
 	}
-	msg := n.ToProducerMessage()
-	payload, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	_, _, err = s.producer.Publish(ctx, s.topic, []byte(n.ID), payload)
-	return err
+	return s.publisher.Publish(ctx, n.ToProducerMessage())
 }
 
 func (s *notificationService) Delete(ctx context.Context, id string) error {
