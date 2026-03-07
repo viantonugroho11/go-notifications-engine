@@ -2,78 +2,71 @@ package kafka
 
 import (
 	"context"
-	"errors"
-	"log"
-	"sync"
+	"fmt"
 
 	"github.com/IBM/sarama"
+	libkafka "github.com/viantonugroho11/go-lib/kafka"
 )
 
-type MessageHandler func(ctx context.Context, msg *sarama.ConsumerMessage) error
-
-type Consumer struct {
-	group   sarama.ConsumerGroup
-	topic   string
-	handler MessageHandler
-
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+// Consumers menjalankan satu consumer group (satu topic + groupID). Bisa untuk tipe event apa saja (generic E).
+// Lifecycle: Start(ctx) lalu Close().
+type Consumers struct {
+	c libkafka.Consumer
 }
 
-func NewConsumer(brokers []string, groupID string, topic string, handler MessageHandler) (*Consumer, error) {
-	cfg := sarama.NewConfig()
-	cfg.Consumer.Return.Errors = true
-	cfg.Version = sarama.V2_8_0_0
+// Start menjalankan consumer sampai ctx dibatalkan.
+func (c *Consumers) Start(ctx context.Context) {
+	if c.c != nil {
+		c.c.Start(ctx)
+	}
+}
 
-	group, err := sarama.NewConsumerGroup(brokers, groupID, cfg)
+// Close menutup consumer dan release resource.
+func (c *Consumers) Close() error {
+	if c.c == nil {
+		return nil
+	}
+	return c.c.Close()
+}
+
+// NewConsumers membuat Consumers untuk tipe event E. Dipakai oleh RegisterConsumers[E].
+func NewConsumers[E any](
+	brokers []string,
+	groupID string,
+	topic string,
+	handler libkafka.EventHandler[E],
+	opts ...libkafka.ConsumerOption,
+) (*Consumers, error) {
+	c, err := libkafka.NewConsumer(brokers, groupID, topic, handler, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return &Consumer{
-		group:   group,
-		topic:   topic,
-		handler: handler,
-	}, nil
+	return &Consumers{c: c}, nil
 }
 
-func (c *Consumer) Start(ctx context.Context) {
-	ctx, cancel := context.WithCancel(ctx)
-	c.cancel = cancel
-	c.wg.Add(1)
-	go func() {
-		defer c.wg.Done()
-		for {
-			if err := c.group.Consume(ctx, []string{c.topic}, &cgHandler{handler: c.handler}); err != nil {
-				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					return
-				}
-				log.Printf("kafka consume error: %v", err)
-			}
-			if ctx.Err() != nil {
-				return
-			}
-		}
-	}()
-}
-
-func (c *Consumer) Close() error {
-	if c.cancel != nil {
-		c.cancel()
+// RegisterConsumers membuat satu consumer untuk tipe event E dari config pertama.
+// Handlers map[key]EventHandler[E]; key = consumer key (sama dengan config.HandlerKey).
+// Kalau event message beda tipe, buat router/handler map tipe lain dan panggil RegisterConsumers[TipeLain].
+func RegisterConsumers[E any](
+	ctx context.Context,
+	brokers []string,
+	configs []ConsumerConfig,
+	handlers map[string]libkafka.EventHandler[E],
+	opts ...libkafka.ConsumerOption,
+) (*Consumers, error) {
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("consumer configs tidak boleh kosong")
 	}
-	c.wg.Wait()
-	return c.group.Close()
-}
-
-type cgHandler struct {
-	handler MessageHandler
-}
-
-func (h *cgHandler) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
-func (h *cgHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
-func (h *cgHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	for msg := range claim.Messages() {
-		_ = h.handler(sess.Context(), msg)
-		sess.MarkMessage(msg, "")
+	cfg := configs[0]
+	h, ok := handlers[cfg.HandlerKey]
+	if !ok {
+		return nil, fmt.Errorf("handler tidak ditemukan untuk key %q", cfg.HandlerKey)
 	}
-	return nil
+	consumerOpts := make([]libkafka.ConsumerOption, 0, len(opts)+2)
+	if cfg.ClientID != "" {
+		consumerOpts = append(consumerOpts, libkafka.WithConsumerClientID(cfg.ClientID))
+	}
+	consumerOpts = append(consumerOpts, libkafka.WithInitialOffset(sarama.OffsetOldest))
+	consumerOpts = append(consumerOpts, opts...)
+	return NewConsumers[E](brokers, cfg.GroupID, cfg.Topic, h, consumerOpts...)
 }

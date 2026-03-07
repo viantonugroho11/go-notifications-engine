@@ -3,7 +3,7 @@
 A structured Go boilerplate (clean-architecture inspired) using:
 - Echo (HTTP server)
 - GORM + PostgreSQL (ORM & database)
-- Kafka (producer & consumer) via `github.com/IBM/sarama`
+- Kafka: producer dan consumer via [go-lib/kafka](https://github.com/viantonugroho11/go-lib); init producer di `internal/infrastructure/broker/kafka`, registrasi & init consumer di `internal/transport/event/kafka/handler` (registry + config per consumer)
 - Redis client via `github.com/redis/go-redis/v9`
 - Viper for configuration (file + environment override)
 
@@ -28,7 +28,7 @@ internal/
         connection.go
         migrate/       # optional SQL examples
     broker/
-      kafka/           # Kafka producer & consumer wrappers
+      kafka/           # Kafka producer wrapper (consumer pakai go-lib/kafka)
     cache/
       redis/           # Redis client initialization
   repository/
@@ -163,13 +163,12 @@ curl -X POST http://localhost:8080/users \
 ```
 
 ## Kafka
-Producer:
-- Wrapper at `internal/infrastructure/broker/kafka/producer.go`, use `Publish(ctx, topic, key, value)`.
+Producer (go-lib):
+- Init di `internal/infrastructure/broker/kafka/notification_producer.go` via `NewNotificationProducer(cfg)`; typed `NotificationProducerMessage`, `Publish(ctx, msg)`.
 
-Consumer:
-- Wrapper at `internal/infrastructure/broker/kafka/consumer.go` using a consumer group.
-- Registration & start in `internal/transport/event/kafka/consumer_runner.go` (example handler logs messages).
-- Wired in `cmd/app/main.go` via group and topic.
+Consumer (go-lib):
+- Registrasi config + handler di `internal/transport/event/kafka/handler/registry.go` (`ConsumerConfig`, `RegisterConsumers`). Setiap consumer punya config sendiri (topic, groupID, clientID).
+- Handler di `internal/transport/event/kafka/handler/`; consumer app di `cmd/consumer/main.go`, bootstrap di `internal/bootstrap/consumer.go`.
 
 Notes:
 - Ensure `KAFKA_BROKERS` points to a running broker.

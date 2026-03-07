@@ -13,9 +13,9 @@ import (
 
 type Services struct {
 	User                 users.UserService
-	Notification          notifications.NotificationService
-	NotificationTemplate  notificationtemplates.NotificationTemplateService
-	NotificationLog       notificationlogs.NotificationLogService
+	Notification         notifications.NotificationService
+	NotificationTemplate notificationtemplates.NotificationTemplateService
+	NotificationLog      notificationlogs.NotificationLogService
 	NotificationInbox    notificationinbox.NotificationInboxService
 }
 
@@ -65,5 +65,3 @@ func RegisterRoutes(e *echo.Echo, svc Services) {
 	inboxGroup.PUT("/:id", inboxHandler.Update)
 	inboxGroup.DELETE("/:id", inboxHandler.Delete)
 }
-
-

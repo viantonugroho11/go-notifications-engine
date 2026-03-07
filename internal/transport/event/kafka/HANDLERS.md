@@ -1,6 +1,10 @@
 # Menambah Handler Kafka Baru
 
-**Pola:** Consumer memakai [go-lib/kafka](https://github.com/viantonugroho11/go-lib). Tiap handler satu file, implement `kafka.EventHandler[NotificationProducerMessage]`, dan **daftar sendiri di main** lewat `map[string]kafka.EventHandler[NotificationProducerMessage]`. Router tidak diubah.
+**Pola:** Mirip **apis** (satu tempat routing). Consumer memakai [go-lib/kafka](https://github.com/viantonugroho11/go-lib).
+
+- **Routing handler:** `internal/transport/event/kafka/router.go` — `EventServices`, `Handlers(svc)`, `Keys` / `AvailableKeys()`. Tambah key + satu baris di `Handlers` = consumer baru.
+- **Config Kafka (topic, group):** `internal/infrastructure/broker/kafka/registry.go` — `GetConsumerConfigByKey(cfg, key)`. Tambah case untuk key baru.
+- **Handler:** satu file per handler di `handler/`, implement `EventHandler[NotificationProducerMessage]`.
 
 ## Langkah
 
@@ -53,24 +57,37 @@ func (h *OrderCreatedHandler) Handle(ctx context.Context, evt OrderEvent, _ ...k
 
 Untuk handler yang memakai **event notifikasi** (topic yang pakai `NotificationProducerMessage`), gunakan `notifEntity.NotificationProducerMessage` dan daftarkan di `RegisterConsumers` yang sama (handler key + consumer config).
 
-### 2. Di main (consumer)
+### 2. Daftarkan routing (event) + config (broker)
 
-- Construct handler dengan dependency-nya.
-- Daftarkan ke map dengan key unik. **Tipe map:** `map[string]kafka.EventHandler[notifEntity.NotificationProducerMessage]` untuk topic notifikasi; untuk event type lain perlu `RegisterConsumers` / constructor consumer yang menerima handler type tersebut (saat ini router hanya mendukung `NotificationProducerMessage`).
-- Tambah `ConsumerConfig` untuk topic + group yang pakai handler itu.
+- **event/kafka/router.go:** tambah `const KeyX = "x"`, tambah `KeyX` ke slice `Keys`, tambah entry di `Handlers(svc)`: `KeyX: handler.NewXHandler(svc.X)`.
+- **broker/kafka/registry.go:** tambah case di `GetConsumerConfigByKey(cfg, key)` untuk key baru (Topic, GroupID, ClientID dari cfg).
+- **EventServices:** jika butuh dependency baru, tambah field di struct dan isi dari bootstrap.
+
+Pemanggil: `brokerkafka.NewConsumerRunner(cfg, consumerKey, eventkafka.EventServices{...})`. Flag `-consumer` menentukan consumer mana yang jalan.
+
+Lifecycle: `Start(ctx)` lalu `Close()`. Progress: `ProgressSuccess` (commit), `ProgressError` (retry), `ProgressSkip`/`ProgressDrop` (commit tanpa retry).
+
+---
+
+### 3. Event message tipe lain (bukan NotificationProducerMessage)
+
+Kalau topic pakai **message type beda** (mis. `OrderEvent`, `PaymentEvent`):
+
+1. **Handler + tipe event** di `handler/` (sama seperti di atas), dengan `EventHandler[OrderEvent]` dsb.
+2. **Router terpisah** di `event/kafka/`: buat mis. `router_order.go`:
+   - `const KeyOrderCreated = "order_created"`
+   - `var KeysOrder = []string{KeyOrderCreated}`
+   - `AllKeys` di `router.go` digabung: `var AllKeys = append(Keys, KeysOrder...)`
+   - `OrderEventServices` struct + `HandlersOrder(svc OrderEventServices) map[string]EventHandler[OrderEvent]`
+3. **Registry:** tambah case di `GetConsumerConfigByKey(cfg, key)` untuk `KeyOrderCreated` (topic, group).
+4. **Jalankan consumer:** pakai **generic runner** — jangan `NewConsumerRunner` (itu untuk notifikasi), tapi `NewConsumerRunnerFor[OrderEvent](cfg, consumerKey, eventkafka.HandlersOrder(svc))`.
+
+Contoh di bootstrap (untuk consumer order):
 
 ```go
-kafkaHandlers := map[string]kafka.EventHandler[notifEntity.NotificationProducerMessage]{
-	"notification": eventhandler.NewNotificationUpdateHandler(notificationService),
-	"sent":         eventhandler.NewNotificationSentHandler(sentSender),
-}
-consumerConfigs := []eventhandler.ConsumerConfig{
-	{Topic: cfg.Kafka.Topic, GroupID: cfg.Kafka.GroupID, HandlerKey: "notification"},
-	{Topic: cfg.Kafka.TopicSent, GroupID: cfg.Kafka.GroupID + "-sent", HandlerKey: "sent"},
-}
-consumers, err := eventhandler.RegisterConsumers(ctx, cfg.KafkaBrokersList(), consumerConfigs, kafkaHandlers)
+orderSvc := usecase.NewOrderService(...)
+handlersOrder := eventkafka.HandlersOrder(eventkafka.OrderEventServices{Order: orderSvc})
+consumers, err := brokerkafka.NewConsumerRunnerFor[entity.OrderEvent](cfg, "order_created", handlersOrder)
 ```
 
-**Tidak perlu** ubah `router.go` — cukup tambah entry di map dan config di main.
-
-Satu `HandlerKey` = satu handler. Satu `ConsumerConfig` = satu consumer (topic + group). Progress: `ProgressSuccess` (commit), `ProgressError` (retry), `ProgressSkip`/`ProgressDrop` (commit tanpa retry).
+Ringkas: **message sama** (NotificationProducerMessage) → pakai `Handlers(svc)` + `NewConsumerRunner`. **Message beda** → buat router + `HandlersX(svc)` + `NewConsumerRunnerFor[TipeEvent]`.

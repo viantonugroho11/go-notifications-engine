@@ -14,7 +14,7 @@ type Notification struct {
 	Data                   map[string]interface{}             `json:"data,omitempty"`
 	Category               Category                           `json:"category"`
 	Channel                Channel                            `json:"channel"`
-	State                  State                             `json:"state"`
+	State                  State                              `json:"state"`
 	ScheduleAt             *time.Time                         `json:"schedule_at,omitempty"`
 	CreatedBy              string                             `json:"created_by"`
 	UpdatedBy              string                             `json:"updated_by,omitempty"`
@@ -145,5 +145,19 @@ func (m *NotificationProducerMessage) ToNotification() Notification {
 		CreatedBy:              m.CreatedBy,
 		UpdatedBy:              m.UpdatedBy,
 		NotificationLogs:       m.NotificationLogs,
+	}
+}
+
+type NotificationsProducerMessage struct {
+	Action string                      `json:"action"`
+	After  NotificationProducerMessage `json:"after"`
+	Before NotificationProducerMessage `json:"before"`
+}
+
+func ToNotificationsProducerMessage(action string, after NotificationProducerMessage, before NotificationProducerMessage) NotificationsProducerMessage {
+	return NotificationsProducerMessage{
+		Action: action,
+		After:  after,
+		Before: before,
 	}
 }
