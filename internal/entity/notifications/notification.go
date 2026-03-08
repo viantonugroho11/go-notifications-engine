@@ -148,14 +148,14 @@ func (m *NotificationProducerMessage) ToNotification() Notification {
 	}
 }
 
-type NotificationsProducerMessage struct {
+type NotificationsEventMessage struct {
 	Action string                      `json:"action"`
 	After  NotificationProducerMessage `json:"after"`
 	Before NotificationProducerMessage `json:"before"`
 }
 
-func ToNotificationsProducerMessage(action string, after NotificationProducerMessage, before NotificationProducerMessage) NotificationsProducerMessage {
-	return NotificationsProducerMessage{
+func ToNotificationsEventMessage(action string, after NotificationProducerMessage, before NotificationProducerMessage) NotificationsEventMessage {
+	return NotificationsEventMessage{
 		Action: action,
 		After:  after,
 		Before: before,

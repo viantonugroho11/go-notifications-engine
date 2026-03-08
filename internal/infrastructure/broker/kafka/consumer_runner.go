@@ -37,7 +37,7 @@ func NewConsumerRunnerFor[E any](
 	return RegisterConsumers[E](context.Background(), cfg.KafkaBrokersList(), []ConsumerConfig{configToRun}, handlers)
 }
 
-// NewConsumerRunner consumer untuk event notifikasi (NotificationProducerMessage). Shortcut yang pakai event/kafka.Handlers.
+// NewConsumerRunner consumer untuk event notifikasi (NotificationsEventMessage: Action, After, Before). Shortcut yang pakai event/kafka.Handlers.
 func NewConsumerRunner(cfg config.Configuration, consumerKey string, svc eventkafka.EventServices) (*Consumers, error) {
-	return NewConsumerRunnerFor[notifEntity.NotificationProducerMessage](cfg, consumerKey, eventkafka.Handlers(svc))
+	return NewConsumerRunnerFor[notifEntity.NotificationsEventMessage](cfg, consumerKey, eventkafka.Handlers(svc))
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"log"
+	"strings"
 
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
 
@@ -14,8 +15,7 @@ type NotificationUpdater interface {
 	Update(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error)
 }
 
-// NotificationUpdateHandler menangani event Kafka untuk update notification.
-// Mengimplementasikan go-lib EventHandler[NotificationProducerMessage]; decode JSON dilakukan oleh consumer.
+// NotificationUpdateHandler menangani event Kafka (NotificationsEventMessage: Action, After, Before).
 type NotificationUpdateHandler struct {
 	updater NotificationUpdater
 }
@@ -28,9 +28,24 @@ func NewNotificationUpdateHandler(updater NotificationUpdater) *NotificationUpda
 // Name untuk logging/metrics consumer go-lib.
 func (h *NotificationUpdateHandler) Name() string { return "notification-update" }
 
-// Handle memproses event NotificationProducerMessage lalu panggil usecase Update.
-func (h *NotificationUpdateHandler) Handle(ctx context.Context, evt notifEntity.NotificationProducerMessage, _ ...kafka.Header) kafka.Progress {
-	n := evt.ToNotification()
+// Handle memproses NotificationsEventMessage; untuk INSERT/UPDATE pakai After, untuk DELETE skip atau pakai Before sesuai kebutuhan.
+func (h *NotificationUpdateHandler) Handle(ctx context.Context, evt notifEntity.NotificationsEventMessage, _ ...kafka.Header) kafka.Progress {
+	switch strings.ToUpper(evt.Action) {
+	case "DELETE":
+		return kafka.Progress{Status: kafka.ProgressSkip}
+	}
+
+	if evt.After.State == notifEntity.StateScheduled.String() {
+		return kafka.Progress{Status: kafka.ProgressSkip}
+	}
+
+	if evt.After.State == notifEntity.StateProcessing.String() {
+		return kafka.Progress{Status: kafka.ProgressSkip}
+	}
+
+
+
+	n := evt.After.ToNotification()
 	_, err := h.updater.Update(ctx, n)
 	if err != nil {
 		log.Printf("kafka notification update: update error: %v", err)

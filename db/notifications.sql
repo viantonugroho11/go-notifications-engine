@@ -3,14 +3,14 @@ CREATE TABLE notifications (
     event_key VARCHAR(100) NOT NULL,
     notification_template_id UUID NOT NULL,
     data JSONB,
-    category VARCHAR(20) NOT NULL, // promo / transactional / system / other
-    channel VARCHAR(20) NOT NULL, // email / sms / push / whatsapp / telegram / line / wechat / weibo / kakao
-    state VARCHAR(20) NOT NULL,
-    schedule_at TIMESTAMP,
-    created_by VARCHAR(100) DEFAULT 'system',
-    updated_by VARCHAR(100),
-    created_at TIMESTAMP NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP,
+    category VARCHAR(20) NOT NULL, -- promo / transactional / system / other
+    channel VARCHAR(20) NOT NULL, -- email / sms / push / whatsapp / telegram / line / wechat / weibo / kakao
+    state VARCHAR(20) NOT NULL, -- created / scheduled / processing / sent / failed / completed
+    schedule_at TIMESTAMP, -- schedule time for sending notification
+    created_by VARCHAR(100) DEFAULT 'system', -- user who created the notification
+    updated_by VARCHAR(100), -- user who updated the notification
+    created_at TIMESTAMP NOT NULL DEFAULT now(), -- notification creation time
+    updated_at TIMESTAMP, -- notification update time
 
     CONSTRAINT fk_notifications_template
         FOREIGN KEY (notification_template_id)

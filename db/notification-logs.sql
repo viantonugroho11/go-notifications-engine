@@ -1,22 +1,22 @@
 CREATE TABLE notification_logs (
     id UUID PRIMARY KEY,
-    notification_id UUID NOT NULL,
-    user_id UUID NOT NULL,
+    notification_id UUID NOT NULL, -- notification that the log is for
+    user_id UUID NOT NULL, -- user who received the notification
 
     -- channel VARCHAR(20) NOT NULL, // email / sms / push / whatsapp / telegram / line / wechat / weibo / kakao
-    send_to TEXT,
+    send_to TEXT, -- email address or device token or phone number or other recipient
 
-    rendered_subject VARCHAR(255),
-    rendered_message TEXT,
+    rendered_subject VARCHAR(255), -- rendered subject of the notification
+    rendered_message TEXT, -- rendered message of the notification
 
     -- data JSONB,                          -- PER-USER override (optional)
 
-    state VARCHAR(20) NOT NULL,           -- queued / processing / sent / failed / completed
-    retry_count INT DEFAULT 0,
-    error_message TEXT,
+    state VARCHAR(20) NOT NULL,           -- pending / processing / sending / failed / completed
+    retry_count INT DEFAULT 0, -- number of times the notification has been retried
+    error_message TEXT, -- error message from the last attempt
 
-    sent_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    sent_at TIMESTAMP, -- time the notification was sent
+    created_at TIMESTAMP NOT NULL DEFAULT now(), -- notification log creation time
 
     CONSTRAINT fk_notification_logs
         FOREIGN KEY (notification_id)

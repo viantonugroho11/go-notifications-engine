@@ -41,10 +41,9 @@ type EventServices struct {
 	SentSender   handler.NotificationSender
 }
 
-// Handlers mengembalikan map key -> handler (routing event by consumer key).
-// Mirip apis.RegisterRoutes: satu tempat, tambah baris untuk consumer baru.
-func Handlers(svc EventServices) map[string]libkafka.EventHandler[notifEntity.NotificationProducerMessage] {
-	return map[string]libkafka.EventHandler[notifEntity.NotificationProducerMessage]{
+// Handlers mengembalikan map key -> handler. Consumer decode message sebagai NotificationsEventMessage (Action, After, Before).
+func Handlers(svc EventServices) map[string]libkafka.EventHandler[notifEntity.NotificationsEventMessage] {
+	return map[string]libkafka.EventHandler[notifEntity.NotificationsEventMessage]{
 		KeyNotification: handler.NewNotificationUpdateHandler(svc.Notification),
 		KeySent:         handler.NewNotificationSentHandler(svc.SentSender),
 	}

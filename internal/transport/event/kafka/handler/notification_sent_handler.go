@@ -28,12 +28,12 @@ func NewNotificationSentHandler(sender NotificationSender) *NotificationSentHand
 // Name untuk logging/metrics consumer go-lib.
 func (h *NotificationSentHandler) Name() string { return "notification-sent" }
 
-// Handle memproses event lalu panggil sender (email/firebase).
-func (h *NotificationSentHandler) Handle(ctx context.Context, evt notifEntity.NotificationProducerMessage, _ ...kafka.Header) kafka.Progress {
+// Handle memproses NotificationsEventMessage; kirim payload After ke sender (email/firebase).
+func (h *NotificationSentHandler) Handle(ctx context.Context, evt notifEntity.NotificationsEventMessage, _ ...kafka.Header) kafka.Progress {
 	if h.sender == nil {
 		return kafka.Progress{Status: kafka.ProgressSkip}
 	}
-	if err := h.sender.Send(ctx, &evt); err != nil {
+	if err := h.sender.Send(ctx, &evt.After); err != nil {
 		log.Printf("kafka notification sent: send error: %v", err)
 		return kafka.Progress{Status: kafka.ProgressError, Err: err}
 	}
