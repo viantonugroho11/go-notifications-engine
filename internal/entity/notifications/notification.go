@@ -56,14 +56,14 @@ func (c Channel) String() string {
 
 type State string
 
+// -- created / scheduled / processing / sent / failed / completed
 const (
-	StateCreated    State = "created"
-	StateScheduled  State = "scheduled"
-	StateProcessing State = "processing"
-	StateRendered   State = "rendered"
-	StateSent       State = "sent"
-	StateFailed     State = "failed"
-	StateCompleted  State = "completed"
+ StateCreated    State = "CREATED"
+ StateScheduled  State = "SCHEDULED"
+ StateProcessing State = "PROCESSING"
+ StateSent       State = "SENT"
+ StateFailed     State = "FAILED"
+ StateCompleted  State = "COMPLETED"
 )
 
 func (s State) String() string {

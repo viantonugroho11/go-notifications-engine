@@ -7,6 +7,9 @@ import (
 
 	logEntity "go-boilerplate-clean/internal/entity/notificationlogs"
 	repolog "go-boilerplate-clean/internal/repository/notificationlog"
+	"go-boilerplate-clean/internal/usecase/notificationlogs/states"
+
+	"gorm.io/gorm"
 )
 
 type NotificationLogService interface {
@@ -18,11 +21,26 @@ type NotificationLogService interface {
 }
 
 type notificationLogService struct {
+	repo                repolog.NotificationLogRepository
+	stateMachineFactory states.INewNotificationLogStateMachine
+}
+
+// notificationLogTransitionSaver mengimplementasikan IOnNotificationLogStateTransition untuk semua transisi (update).
+type notificationLogTransitionSaver struct {
 	repo repolog.NotificationLogRepository
 }
 
+func (s *notificationLogTransitionSaver) OnStateTransition(ctx context.Context, tx *gorm.DB, update logEntity.NotificationLog) (logEntity.NotificationLog, error) {
+	return s.repo.Update(ctx, update)
+}
+
 func NewNotificationLogService(repo repolog.NotificationLogRepository) NotificationLogService {
-	return &notificationLogService{repo: repo}
+	saver := &notificationLogTransitionSaver{repo: repo}
+	factory := states.NewNotificationLogStateMachineFactory(saver, saver, saver, saver, saver)
+	return &notificationLogService{
+		repo:                repo,
+		stateMachineFactory: factory,
+	}
 }
 
 func (s *notificationLogService) Create(ctx context.Context, l logEntity.NotificationLog) (logEntity.NotificationLog, error) {
@@ -33,7 +51,7 @@ func (s *notificationLogService) Create(ctx context.Context, l logEntity.Notific
 		l.CreatedAt = time.Now()
 	}
 	if l.State == "" {
-		l.State = logEntity.StateQueued
+		l.State = logEntity.StatePending
 	}
 	return s.repo.Create(ctx, l)
 }
@@ -56,7 +74,15 @@ func (s *notificationLogService) Update(ctx context.Context, l logEntity.Notific
 	if err := validateLog(l); err != nil {
 		return logEntity.NotificationLog{}, err
 	}
-	return s.repo.Update(ctx, l)
+	current, err := s.repo.GetByID(ctx, l.ID)
+	if err != nil {
+		return logEntity.NotificationLog{}, err
+	}
+	stateMachine, err := s.stateMachineFactory.NewStateMachine(ctx, nil, &current)
+	if err != nil {
+		return logEntity.NotificationLog{}, err
+	}
+	return stateMachine.Do(ctx, nil, l)
 }
 
 func (s *notificationLogService) Delete(ctx context.Context, id string) error {

@@ -9,6 +9,9 @@ import (
 	reponotif "go-boilerplate-clean/internal/repository/notification"
 	repotpl "go-boilerplate-clean/internal/repository/notificationtemplate"
 	"go-boilerplate-clean/internal/shared/schema"
+	"go-boilerplate-clean/internal/usecase/notifications/states"
+
+	"gorm.io/gorm"
 )
 
 // NotificationEventPublisher mempublish event notifikasi ke Kafka (mis. via go-lib/kafka Producer).
@@ -25,16 +28,39 @@ type NotificationService interface {
 }
 
 type notificationService struct {
-	repo         reponotif.NotificationRepository
-	repoTemplate repotpl.NotificationTemplateRepository
-	publisher    NotificationEventPublisher
+	repo                reponotif.NotificationRepository
+	repoTemplate        repotpl.NotificationTemplateRepository
+	publisher           NotificationEventPublisher
+	stateMachineFactory states.INewNotificationStateMachine
+}
+
+// notificationTransitionSaver mengimplementasikan IOnNotificationStateTransition untuk semua transisi (update + publish).
+type notificationTransitionSaver struct {
+	repo      reponotif.NotificationRepository
+	publisher NotificationEventPublisher
+}
+
+func (s *notificationTransitionSaver) OnStateTransition(ctx context.Context, tx *gorm.DB, update notifEntity.Notification) (notifEntity.Notification, error) {
+	now := time.Now()
+	update.UpdatedAt = &now
+	updated, err := s.repo.Update(ctx, update)
+	if err != nil {
+		return notifEntity.Notification{}, err
+	}
+	if s.publisher != nil {
+		_ = s.publisher.Publish(ctx, updated.ToProducerMessage())
+	}
+	return updated, nil
 }
 
 func NewNotificationService(repo reponotif.NotificationRepository, repoTemplate repotpl.NotificationTemplateRepository, publisher NotificationEventPublisher) NotificationService {
+	saver := &notificationTransitionSaver{repo: repo, publisher: publisher}
+	factory := states.NewNotificationStateMachineFactory(saver, saver, saver, saver, saver, saver)
 	return &notificationService{
-		repo:         repo,
-		repoTemplate: repoTemplate,
-		publisher:    publisher,
+		repo:                repo,
+		repoTemplate:        repoTemplate,
+		publisher:           publisher,
+		stateMachineFactory: factory,
 	}
 }
 
@@ -99,16 +125,15 @@ func (s *notificationService) Update(ctx context.Context, n notifEntity.Notifica
 	if err := validateNotification(n, false); err != nil {
 		return notifEntity.Notification{}, err
 	}
-	now := time.Now()
-	n.UpdatedAt = &now
-	updated, err := s.repo.Update(ctx, n)
+	current, err := s.repo.GetByID(ctx, n.ID)
 	if err != nil {
 		return notifEntity.Notification{}, err
 	}
-	if err := s.publishNotificationEvent(ctx, updated); err != nil {
-		_ = err
+	stateMachine, err := s.stateMachineFactory.NewStateMachine(ctx, nil, &current)
+	if err != nil {
+		return notifEntity.Notification{}, err
 	}
-	return updated, nil
+	return stateMachine.Do(ctx, nil, n)
 }
 
 func (s *notificationService) publishNotificationEvent(ctx context.Context, n notifEntity.Notification) error {

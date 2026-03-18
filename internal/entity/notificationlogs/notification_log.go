@@ -3,30 +3,30 @@ package notificationlogs
 import "time"
 
 type NotificationLog struct {
-	ID               string                 `json:"id"`
-	NotificationID   string                 `json:"notification_id"`
-	UserID           string                 `json:"user_id"`
+	ID             string `json:"id"`
+	NotificationID string `json:"notification_id"`
+	UserID         string `json:"user_id"`
 	// Channel          Channel                 `json:"channel"`
-	SendTo           string                 `json:"send_to,omitempty"`
-	RenderedSubject  string                 `json:"rendered_subject,omitempty"`
-	RenderedMessage  string                 `json:"rendered_message,omitempty"`
+	SendTo          string `json:"send_to,omitempty"`
+	RenderedSubject string `json:"rendered_subject,omitempty"`
+	RenderedMessage string `json:"rendered_message,omitempty"`
 	// Data             map[string]interface{} `json:"data,omitempty"`
-	State            State                  `json:"state"`
-	RetryCount       int                    `json:"retry_count"`
-	ErrorMessage     string                 `json:"error_message,omitempty"`
-	SentAt           *time.Time             `json:"sent_at,omitempty"`
-	CreatedAt        time.Time              `json:"created_at"`
+	State        State      `json:"state"`
+	RetryCount   int        `json:"retry_count"`
+	ErrorMessage string     `json:"error_message,omitempty"`
+	SentAt       *time.Time `json:"sent_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
 }
-
 
 type State string
 
+// -- pending / processing / sending / failed / completed
 const (
-	StateQueued     State = "queued"
-	StateProcessing State = "processing"
-	StateSent       State = "sent"
-	StateFailed     State = "failed"
-	StateCompleted  State = "completed"
+	StatePending    State = "PENDING"
+	StateProcessing State = "PROCESSING"
+	StateSent       State = "SENT"
+	StateFailed     State = "FAILED"
+	StateCompleted  State = "COMPLETED"
 )
 
 func (s State) String() string {
@@ -36,15 +36,15 @@ func (s State) String() string {
 type Channel string
 
 const (
-	ChannelEmail Channel = "email"
-	ChannelSMS   Channel = "sms"
-	ChannelPush  Channel = "push"
+	ChannelEmail    Channel = "email"
+	ChannelSMS      Channel = "sms"
+	ChannelPush     Channel = "push"
 	ChannelWhatsApp Channel = "whatsapp"
 	ChannelTelegram Channel = "telegram"
-	ChannelLine Channel = "line"
-	ChannelWeChat Channel = "wechat"
-	ChannelWeibo Channel = "weibo"
-	ChannelKakao Channel = "kakao"
+	ChannelLine     Channel = "line"
+	ChannelWeChat   Channel = "wechat"
+	ChannelWeibo    Channel = "weibo"
+	ChannelKakao    Channel = "kakao"
 )
 
 func (c Channel) String() string {

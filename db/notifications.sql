@@ -5,7 +5,9 @@ CREATE TABLE notifications (
     data JSONB,
     category VARCHAR(20) NOT NULL, -- promo / transactional / system / other
     channel VARCHAR(20) NOT NULL, -- email / sms / push / whatsapp / telegram / line / wechat / weibo / kakao
+    
     state VARCHAR(20) NOT NULL, -- created / scheduled / processing / sent / failed / completed
+
     schedule_at TIMESTAMP, -- schedule time for sending notification
     created_by VARCHAR(100) DEFAULT 'system', -- user who created the notification
     updated_by VARCHAR(100), -- user who updated the notification

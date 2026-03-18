@@ -39,7 +39,7 @@ func (r *CreateNotificationRequest) ToEntity() notifEntity.Notification {
 	for _, userID := range r.UserIDs {
 		logs = append(logs, notificationlogs.NotificationLog{
 			UserID: userID,
-			State:  notificationlogs.StateQueued,
+			State:  notificationlogs.StatePending,
 		})
 	}
 	return notifEntity.Notification{
