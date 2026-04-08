@@ -7,12 +7,16 @@ import (
 	"fmt"
 	"net/http"
 
+	"go-boilerplate-clean/internal/entity/notificationinbox"
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	"go-boilerplate-clean/internal/entity/notificationlogs"
 )
 
 // Client memanggil API notification (update, dll.) via HTTP.
 type Client interface {
 	Update(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error)
+	CreateInbox(ctx context.Context, n notificationinbox.NotificationInbox) (notificationinbox.NotificationInbox, error)
+	UpdateNotificationLog(ctx context.Context, n notificationlogs.NotificationLog) (notificationlogs.NotificationLog, error)
 }
 
 type client struct {
@@ -55,30 +59,55 @@ func (c *client) Update(ctx context.Context, n notifEntity.Notification) (notifE
 	return out, nil
 }
 
-type updateRequest struct {
-	EventKey               string                 `json:"event_key"`
-	NotificationTemplateID string                 `json:"notification_template_id"`
-	Data                   map[string]interface{} `json:"data,omitempty"`
-	Channel                string                 `json:"channel"`
-	Category               string                 `json:"category"`
-	State                  string                 `json:"state"`
-	ScheduleAt             *string                `json:"schedule_at,omitempty"`
-	UpdatedBy              string                 `json:"updated_by,omitempty"`
+
+func (c *client) CreateInbox(ctx context.Context, n notificationinbox.NotificationInbox) (notificationinbox.NotificationInbox, error) {
+	body, err := json.Marshal(notificationInboxToCreateRequest(n))
+	if err != nil {
+		return notificationinbox.NotificationInbox{}, err
+	}
+	url := c.baseURL + "/notificationinbox"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return notificationinbox.NotificationInbox{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return notificationinbox.NotificationInbox{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		return notificationinbox.NotificationInbox{}, fmt.Errorf("notification API: %s %s", resp.Status, url)
+	}
+	var out notificationinbox.NotificationInbox
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return notificationinbox.NotificationInbox{}, err
+	}
+	return out, nil
 }
 
-func notificationToUpdateRequest(n notifEntity.Notification) updateRequest {
-	r := updateRequest{
-		EventKey:               n.EventKey,
-		NotificationTemplateID: n.NotificationTemplateID,
-		Data:                   n.Data,
-		Channel:                n.Channel.String(),
-		Category:               n.Category.String(),
-		State:                  n.State.String(),
-		UpdatedBy:              n.UpdatedBy,
+func (c *client) UpdateNotificationLog(ctx context.Context, n notificationlogs.NotificationLog) (notificationlogs.NotificationLog, error) {
+body, err := json.Marshal(notificationLogToUpdateRequest(n))
+	if err != nil {
+		return notificationlogs.NotificationLog{}, err
 	}
-	if n.ScheduleAt != nil {
-		s := n.ScheduleAt.Format("2006-01-02T15:04:05Z07:00")
-		r.ScheduleAt = &s
+	url := c.baseURL + "/notificationlogs/" + n.ID
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(body))
+	if err != nil {
+		return notificationlogs.NotificationLog{}, err
 	}
-	return r
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return notificationlogs.NotificationLog{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return notificationlogs.NotificationLog{}, fmt.Errorf("notification API: %s %s", resp.Status, url)
+	}
+	var out notificationlogs.NotificationLog
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return notificationlogs.NotificationLog{}, err
+	}
+	return out, nil
 }
