@@ -4,8 +4,6 @@ import (
 	"context"
 	"log"
 
-	"firebase.google.com/go/v4/messaging"
-
 	"go-boilerplate-clean/internal/client/email"
 	"go-boilerplate-clean/internal/client/firebase"
 	notifEntity "go-boilerplate-clean/internal/entity/notifications"
@@ -42,14 +40,13 @@ func (s *SentSender) Send(ctx context.Context, msg *notifEntity.NotificationProd
 			}
 		case "push":
 			if s.Firebase != nil && sendTo != "" {
-				fcmMsg := &messaging.Message{
+				if _, err := s.Firebase.Send(ctx, firebase.Message{
 					Token: sendTo,
-					Notification: &messaging.Notification{
+					Notification: &firebase.Notification{
 						Title: subject,
 						Body:  body,
 					},
-				}
-				if _, err := s.Firebase.Send(ctx, fcmMsg); err != nil {
+				}); err != nil {
 					log.Printf("notification sender: firebase error: %v", err)
 					return err
 				}
