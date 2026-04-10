@@ -58,12 +58,12 @@ type State string
 
 // -- created / scheduled / processing / sent / failed / completed
 const (
- StateCreated    State = "CREATED"
- StateScheduled  State = "SCHEDULED"
- StateProcessing State = "PROCESSING"
- StateSent       State = "SENT"
- StateFailed     State = "FAILED"
- StateCompleted  State = "COMPLETED"
+	StateCreated    State = "CREATED"
+	StateScheduled  State = "SCHEDULED"
+	StateProcessing State = "PROCESSING"
+	StateSent       State = "SENT"
+	StateFailed     State = "FAILED"
+	StateCompleted  State = "COMPLETED"
 )
 
 func (s State) String() string {
@@ -160,4 +160,20 @@ func ToNotificationsEventMessage(action string, after NotificationProducerMessag
 		After:  after,
 		Before: before,
 	}
+}
+
+type NotificationEventUsecase struct {
+	ID                     string                           `json:"id"`
+	EventKey               string                           `json:"event_key"`
+	NotificationTemplateID string                           `json:"notification_template_id"`
+	Data                   map[string]interface{}           `json:"data,omitempty"`
+	Category               Category                         `json:"category"`
+	Channel                Channel                          `json:"channel"`
+	State                  State                            `json:"state"`
+	ScheduleAt             *time.Time                       `json:"schedule_at,omitempty"`
+	CreatedBy              string                           `json:"created_by"`
+	UpdatedBy              string                           `json:"updated_by,omitempty"`
+	CreatedAt              time.Time                        `json:"created_at"`
+	UpdatedAt              *time.Time                       `json:"updated_at,omitempty"`
+	NotificationLogs       notificationlogs.NotificationLog `json:"notification_logs,omitempty"`
 }
