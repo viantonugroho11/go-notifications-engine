@@ -81,24 +81,25 @@ type NotificationListParam struct {
 	Page, Limit, Offset    int
 }
 
-// message template
-func (n *Notification) GenerateRenderedMessage(messageTemplate string) string {
+func renderTemplate(data map[string]interface{}, tmpl string) string {
+	if tmpl == "" {
+		return ""
+	}
 	t, err := template.New("tmpl").
 		Option("missingkey=zero").
-		Parse(messageTemplate)
-
+		Parse(tmpl)
 	if err != nil {
 		return ""
 	}
-
 	var buf bytes.Buffer
-
-	err = t.Execute(&buf, n.Data)
-	if err != nil {
+	if err = t.Execute(&buf, data); err != nil {
 		return ""
 	}
-
 	return buf.String()
+}
+
+func (n *Notification) GenerateRenderedMessage(messageTemplate string) string {
+	return renderTemplate(n.Data, messageTemplate)
 }
 
 type NotificationProducerMessage struct {
@@ -176,4 +177,12 @@ type NotificationEventUsecase struct {
 	CreatedAt              time.Time                        `json:"created_at"`
 	UpdatedAt              *time.Time                       `json:"updated_at,omitempty"`
 	NotificationLogs       notificationlogs.NotificationLog `json:"notification_logs,omitempty"`
+}
+
+func (n *NotificationEventUsecase) GenerateRenderedMessage(messageTemplate string) string {
+	return renderTemplate(n.Data, messageTemplate)
+}
+
+func (n *NotificationEventUsecase) GenerateRenderedSubject(subjectTemplate string) string {
+	return renderTemplate(n.Data, subjectTemplate)
 }
