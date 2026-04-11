@@ -8,8 +8,9 @@ import (
 	"net/http"
 
 	"go-boilerplate-clean/internal/entity/notificationinbox"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
 	"go-boilerplate-clean/internal/entity/notificationlogs"
+	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	"go-boilerplate-clean/internal/entity/notificationtemplates"
 )
 
 // Client memanggil API notification (update, dll.) via HTTP.
@@ -17,6 +18,7 @@ type Client interface {
 	Update(ctx context.Context, n notifEntity.Notification) (notifEntity.Notification, error)
 	CreateInbox(ctx context.Context, n notificationinbox.NotificationInbox) (notificationinbox.NotificationInbox, error)
 	UpdateNotificationLog(ctx context.Context, n notificationlogs.NotificationLog) (notificationlogs.NotificationLog, error)
+	GetNotificationTemplate(ctx context.Context, id string) (notificationtemplates.NotificationTemplate, error)
 }
 
 type client struct {
@@ -108,6 +110,28 @@ body, err := json.Marshal(notificationLogToUpdateRequest(n))
 	var out notificationlogs.NotificationLog
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return notificationlogs.NotificationLog{}, err
+	}
+	return out, nil
+}
+
+func (c *client) GetNotificationTemplate(ctx context.Context, id string) (notificationtemplates.NotificationTemplate, error) {
+	url := c.baseURL + "/notificationtemplates/" + id
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return notificationtemplates.NotificationTemplate{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return notificationtemplates.NotificationTemplate{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return notificationtemplates.NotificationTemplate{}, fmt.Errorf("notification API: %s %s", resp.Status, url)
+	}
+	var out notificationtemplates.NotificationTemplate
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return notificationtemplates.NotificationTemplate{}, err
 	}
 	return out, nil
 }
