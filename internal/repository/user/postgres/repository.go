@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	userEntity "go-boilerplate-clean/internal/entity/users"
-	"go-boilerplate-clean/internal/repository/user"
-	"go-boilerplate-clean/internal/repository/user/model"
+	userEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/users"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/user"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/user/model"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

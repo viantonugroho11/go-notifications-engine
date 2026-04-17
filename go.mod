@@ -1,4 +1,4 @@
-module go-boilerplate-clean
+module github.com/viantonugroho11/go-notifications-engine
 
 go 1.24.0
 

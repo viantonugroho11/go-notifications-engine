@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 
 	kafka "github.com/viantonugroho11/go-lib/kafka"
 )

@@ -3,9 +3,9 @@ package kafka
 import (
 	"sort"
 
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	"go-boilerplate-clean/internal/transport/event/kafka/handler"
-	usecasenotif "go-boilerplate-clean/internal/usecase/notifications"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/event/kafka/handler"
+	usecasenotif "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notifications"
 
 	libkafka "github.com/viantonugroho11/go-lib/kafka"
 )

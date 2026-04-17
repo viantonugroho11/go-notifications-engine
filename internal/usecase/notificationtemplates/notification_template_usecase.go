@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	tplEntity "go-boilerplate-clean/internal/entity/notificationtemplates"
-	repotpl "go-boilerplate-clean/internal/repository/notificationtemplate"
-	"go-boilerplate-clean/internal/shared/schema"
+	tplEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationtemplates"
+	repotpl "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationtemplate"
+	"github.com/viantonugroho11/go-notifications-engine/internal/shared/schema"
 )
 
 type NotificationTemplateService interface {
@@ -37,8 +37,6 @@ func (s *notificationTemplateService) Create(ctx context.Context, t tplEntity.No
 	if err := schema.ValidateTemplateSchema(t.PayloadSchema); err != nil {
 		return tplEntity.NotificationTemplate{}, err
 	}
-
-
 
 	return s.repo.Create(ctx, t)
 }
@@ -92,4 +90,4 @@ var (
 type validationError struct{ msg string }
 
 func newValidationError(msg string) error { return &validationError{msg: msg} }
-func (e *validationError) Error() string { return e.msg }
+func (e *validationError) Error() string  { return e.msg }

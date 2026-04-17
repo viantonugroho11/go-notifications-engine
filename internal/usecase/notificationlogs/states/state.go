@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	logEntity "go-boilerplate-clean/internal/entity/notificationlogs"
+	logEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
 
 	"gorm.io/gorm"
 )

@@ -3,7 +3,7 @@ package notificationinbox
 import (
 	"context"
 
-	inboxEntity "go-boilerplate-clean/internal/entity/notificationinbox"
+	inboxEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
 )
 
 type NotificationInboxRepository interface {

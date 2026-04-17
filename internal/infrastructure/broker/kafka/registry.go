@@ -3,8 +3,8 @@ package kafka
 import (
 	"fmt"
 
-	"go-boilerplate-clean/internal/config"
-	eventkafka "go-boilerplate-clean/internal/transport/event/kafka"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	eventkafka "github.com/viantonugroho11/go-notifications-engine/internal/transport/event/kafka"
 )
 
 // ConsumerConfig konfigurasi per consumer (topic, group, clientID). HandlerKey = event key.

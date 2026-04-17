@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 
-	logEntity "go-boilerplate-clean/internal/entity/notificationlogs"
-	"go-boilerplate-clean/internal/repository/notificationlog"
-	"go-boilerplate-clean/internal/repository/notificationlog/model"
+	logEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationlog"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationlog/model"
 
-	
 	"gorm.io/gorm"
 )
 
@@ -76,4 +75,3 @@ func (r *notificationLogRepository) Delete(ctx context.Context, id string) error
 	}
 	return nil
 }
-

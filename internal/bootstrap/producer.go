@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"go-boilerplate-clean/internal/config"
-	brokerkafka "go-boilerplate-clean/internal/infrastructure/broker/kafka"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	brokerkafka "github.com/viantonugroho11/go-notifications-engine/internal/infrastructure/broker/kafka"
 )
 
 // newNotificationProducer membuat producer notifikasi via broker (go-lib/kafka).

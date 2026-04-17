@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	reponotif "go-boilerplate-clean/internal/repository/notification"
-	repotpl "go-boilerplate-clean/internal/repository/notificationtemplate"
-	"go-boilerplate-clean/internal/shared/schema"
-	"go-boilerplate-clean/internal/usecase/notifications/states"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	reponotif "github.com/viantonugroho11/go-notifications-engine/internal/repository/notification"
+	repotpl "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationtemplate"
+	"github.com/viantonugroho11/go-notifications-engine/internal/shared/schema"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/notifications/states"
 
 	"gorm.io/gorm"
 )

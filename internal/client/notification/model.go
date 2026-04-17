@@ -1,12 +1,12 @@
 package notification
 
 import (
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	"go-boilerplate-clean/internal/entity/notificationinbox"
-	"go-boilerplate-clean/internal/entity/notificationlogs"
 	"time"
-)
 
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+)
 
 type updateRequest struct {
 	EventKey               string                 `json:"event_key"`
@@ -35,7 +35,6 @@ func notificationToUpdateRequest(n notifEntity.Notification) updateRequest {
 	}
 	return r
 }
-
 
 type createInboxRequest struct {
 	UserID            string     `json:"user_id"`

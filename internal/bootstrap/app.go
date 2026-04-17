@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"go-boilerplate-clean/internal/config"
-	redisinfra "go-boilerplate-clean/internal/infrastructure/cache/redis"
-	"go-boilerplate-clean/internal/transport/apis"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	redisinfra "github.com/viantonugroho11/go-notifications-engine/internal/infrastructure/cache/redis"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

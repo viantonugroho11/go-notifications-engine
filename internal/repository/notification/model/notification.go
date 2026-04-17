@@ -2,10 +2,11 @@ package model
 
 import (
 	"encoding/json"
-	"go-boilerplate-clean/internal/entity/notificationlogs"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	notifLogModel "go-boilerplate-clean/internal/repository/notificationlog/model"
 	"time"
+
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	notifLogModel "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationlog/model"
 
 	"gorm.io/gorm"
 )

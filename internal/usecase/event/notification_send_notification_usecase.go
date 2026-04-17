@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
-	"go-boilerplate-clean/internal/client/email"
-	"go-boilerplate-clean/internal/client/firebase"
-	"go-boilerplate-clean/internal/client/notification"
-	"go-boilerplate-clean/internal/entity/notificationlogs"
-	"go-boilerplate-clean/internal/entity/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/email"
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/firebase"
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/notification"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 )
 
 type NotificationProcessingToUsecase interface {

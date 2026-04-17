@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"go-boilerplate-clean/internal/entity/notificationinbox"
-	"go-boilerplate-clean/internal/entity/notificationlogs"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	"go-boilerplate-clean/internal/entity/notificationtemplates"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationtemplates"
 )
 
 // Client memanggil API notification (update, dll.) via HTTP.
@@ -61,7 +61,6 @@ func (c *client) Update(ctx context.Context, n notifEntity.Notification) (notifE
 	return out, nil
 }
 
-
 func (c *client) CreateInbox(ctx context.Context, n notificationinbox.NotificationInbox) (notificationinbox.NotificationInbox, error) {
 	body, err := json.Marshal(notificationInboxToCreateRequest(n))
 	if err != nil {
@@ -89,7 +88,7 @@ func (c *client) CreateInbox(ctx context.Context, n notificationinbox.Notificati
 }
 
 func (c *client) UpdateNotificationLog(ctx context.Context, n notificationlogs.NotificationLog) (notificationlogs.NotificationLog, error) {
-body, err := json.Marshal(notificationLogToUpdateRequest(n))
+	body, err := json.Marshal(notificationLogToUpdateRequest(n))
 	if err != nil {
 		return notificationlogs.NotificationLog{}, err
 	}

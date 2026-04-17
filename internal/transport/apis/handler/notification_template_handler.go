@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	tplEntity "go-boilerplate-clean/internal/entity/notificationtemplates"
-	"go-boilerplate-clean/internal/transport/apis/dto"
-	tplUsecase "go-boilerplate-clean/internal/usecase/notificationtemplates"
+	tplEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationtemplates"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis/dto"
+	tplUsecase "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationtemplates"
 
 	"github.com/labstack/echo/v4"
 )

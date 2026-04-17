@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	tplEntity "go-boilerplate-clean/internal/entity/notificationtemplates"
-	"go-boilerplate-clean/internal/repository/notificationtemplate"
-	"go-boilerplate-clean/internal/repository/notificationtemplate/model"
+	tplEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationtemplates"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationtemplate"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationtemplate/model"
 
 	"gorm.io/gorm"
 )
@@ -72,5 +72,3 @@ func (r *notificationTemplateRepository) Delete(ctx context.Context, id string) 
 	}
 	return nil
 }
-
-

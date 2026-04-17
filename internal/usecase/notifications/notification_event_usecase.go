@@ -3,7 +3,7 @@ package notifications
 import (
 	"context"
 
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 )
 
 // NotificationEventUsecase usecase untuk event notifikasi (e.g. consumer Kafka).

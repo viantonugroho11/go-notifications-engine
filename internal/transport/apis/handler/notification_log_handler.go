@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	logEntity "go-boilerplate-clean/internal/entity/notificationlogs"
-	"go-boilerplate-clean/internal/transport/apis/dto"
-	logUsecase "go-boilerplate-clean/internal/usecase/notificationlogs"
+	logEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis/dto"
+	logUsecase "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationlogs"
 
 	"github.com/labstack/echo/v4"
 )
@@ -55,18 +55,18 @@ func (h *NotificationLogHandler) Update(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 	}
 	l, err := h.service.Update(c.Request().Context(), logEntity.NotificationLog{
-		ID:              id,
-		NotificationID:  req.NotificationID,
-		UserID:          req.UserID,
+		ID:             id,
+		NotificationID: req.NotificationID,
+		UserID:         req.UserID,
 		// Channel:         logEntity.Channel(req.Channel),
 		SendTo:          req.SendTo,
 		RenderedSubject: req.RenderedSubject,
 		RenderedMessage: req.RenderedMessage,
 		// Data:            req.Data,
-		State:           logEntity.State(req.State),
-		RetryCount:      req.RetryCount,
-		ErrorMessage:   req.ErrorMessage,
-		SentAt:          req.SentAt,
+		State:        logEntity.State(req.State),
+		RetryCount:   req.RetryCount,
+		ErrorMessage: req.ErrorMessage,
+		SentAt:       req.SentAt,
 	})
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})

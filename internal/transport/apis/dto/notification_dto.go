@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	notificationlogs "go-boilerplate-clean/internal/entity/notificationlogs"
-	"go-boilerplate-clean/internal/entity/notifications"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	notificationlogs "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 
 	"github.com/labstack/echo/v4"
 )
@@ -55,7 +55,7 @@ func (r *CreateNotificationRequest) ToEntity() notifEntity.Notification {
 	}
 }
 
-type 	NotificationResponse struct {
+type NotificationResponse struct {
 	ID                     string                             `json:"id"`
 	EventKey               string                             `json:"event_key"`
 	NotificationTemplateID string                             `json:"notification_template_id"`
@@ -170,6 +170,3 @@ type NotificationListResponse struct {
 	Limit         int                    `json:"limit"`
 	Offset        int                    `json:"offset"`
 }
-
-
-

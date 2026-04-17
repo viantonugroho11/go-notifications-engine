@@ -4,15 +4,15 @@ import (
 	"log"
 	"os"
 
-	"go-boilerplate-clean/internal/bootstrap"
-	"go-boilerplate-clean/internal/config"
+	"github.com/viantonugroho11/go-notifications-engine/internal/bootstrap"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
 
 	confLoader "github.com/viantonugroho11/go-config-library"
 )
 
 func main() {
 	cfg := config.Configuration{}
-	loader := confLoader.New("", "go-boilerplate-clean", os.Getenv("CONSUL_URL"),
+	loader := confLoader.New("", "github.com/viantonugroho11/go-notifications-engine", os.Getenv("CONSUL_URL"),
 		confLoader.WithConfigFileSearchPaths("./config"),
 	)
 	if err := loader.Load(&cfg); err != nil {

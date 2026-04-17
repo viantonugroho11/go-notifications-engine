@@ -2,7 +2,8 @@ package user
 
 import (
 	"context"
-	userEntity "go-boilerplate-clean/internal/entity/users"
+
+	userEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/users"
 )
 
 // Interface repository untuk entity User.

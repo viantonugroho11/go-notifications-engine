@@ -1,17 +1,17 @@
 package bootstrap
 
 import (
-	notifpg "go-boilerplate-clean/internal/repository/notification/postgres"
-	inboxpg "go-boilerplate-clean/internal/repository/notificationinbox/postgres"
-	logpg "go-boilerplate-clean/internal/repository/notificationlog/postgres"
-	tplpg "go-boilerplate-clean/internal/repository/notificationtemplate/postgres"
-	userpg "go-boilerplate-clean/internal/repository/user/postgres"
-	"go-boilerplate-clean/internal/transport/apis"
-	usecaseinbox "go-boilerplate-clean/internal/usecase/notificationinbox"
-	usecaselog "go-boilerplate-clean/internal/usecase/notificationlogs"
-	usecasenotif "go-boilerplate-clean/internal/usecase/notifications"
-	usecasetpl "go-boilerplate-clean/internal/usecase/notificationtemplates"
-	usecaseusers "go-boilerplate-clean/internal/usecase/users"
+	notifpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/notification/postgres"
+	inboxpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationinbox/postgres"
+	logpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationlog/postgres"
+	tplpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationtemplate/postgres"
+	userpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/user/postgres"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis"
+	usecaseinbox "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationinbox"
+	usecaselog "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationlogs"
+	usecasenotif "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notifications"
+	usecasetpl "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationtemplates"
+	usecaseusers "github.com/viantonugroho11/go-notifications-engine/internal/usecase/users"
 
 	"gorm.io/gorm"
 )

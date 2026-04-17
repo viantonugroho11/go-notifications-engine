@@ -3,10 +3,11 @@ package event
 import (
 	"context"
 	"errors"
-	"go-boilerplate-clean/internal/client/person"
-	"go-boilerplate-clean/internal/client/notification"
-	"go-boilerplate-clean/internal/entity/notificationlogs"
-	"go-boilerplate-clean/internal/entity/notifications"
+
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/notification"
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/person"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 )
 
 type NotificationFetchPersonUsecase interface {
@@ -14,7 +15,7 @@ type NotificationFetchPersonUsecase interface {
 }
 
 type notificationFetchPersonUsecase struct {
-	personClient person.PersonClient
+	personClient       person.PersonClient
 	notificationClient notification.Client
 }
 
@@ -55,7 +56,7 @@ func (s *notificationFetchPersonUsecase) Fetch(ctx context.Context, n notificati
 	n.NotificationLogs.SendTo = sendTo
 
 	_, err = s.notificationClient.UpdateNotificationLog(ctx, notificationlogs.NotificationLog{
-		ID: n.NotificationLogs.ID,
+		ID:     n.NotificationLogs.ID,
 		SendTo: sendTo,
 	})
 	if err != nil {

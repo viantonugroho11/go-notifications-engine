@@ -3,9 +3,9 @@ package kafka
 import (
 	"context"
 
-	"go-boilerplate-clean/internal/config"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	usecasenotif "go-boilerplate-clean/internal/usecase/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	usecasenotif "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notifications"
 
 	"github.com/IBM/sarama"
 	libkafka "github.com/viantonugroho11/go-lib/kafka"

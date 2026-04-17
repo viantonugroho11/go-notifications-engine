@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"go-boilerplate-clean/internal/config"
-	brokerkafka "go-boilerplate-clean/internal/infrastructure/broker/kafka"
-	notifpg "go-boilerplate-clean/internal/repository/notification/postgres"
-	tplpg "go-boilerplate-clean/internal/repository/notificationtemplate/postgres"
-	eventkafka "go-boilerplate-clean/internal/transport/event/kafka"
-	usecasenotif "go-boilerplate-clean/internal/usecase/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	brokerkafka "github.com/viantonugroho11/go-notifications-engine/internal/infrastructure/broker/kafka"
+	notifpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/notification/postgres"
+	tplpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationtemplate/postgres"
+	eventkafka "github.com/viantonugroho11/go-notifications-engine/internal/transport/event/kafka"
+	usecasenotif "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notifications"
 )
 
 // ConsumerApp menjalankan satu Kafka consumer dan mengelola lifecycle (DB, consumer, shutdown).

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	userEntity "go-boilerplate-clean/internal/entity/users"
-	repouser "go-boilerplate-clean/internal/repository/user"
+	userEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/users"
+	repouser "github.com/viantonugroho11/go-notifications-engine/internal/repository/user"
 )
 
 type UserService interface {

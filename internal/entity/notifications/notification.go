@@ -2,9 +2,10 @@ package notifications
 
 import (
 	"bytes"
-	"go-boilerplate-clean/internal/entity/notificationlogs"
 	"text/template"
 	"time"
+
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
 )
 
 type Notification struct {

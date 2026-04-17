@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	"go-boilerplate-clean/internal/repository/notification"
-	"go-boilerplate-clean/internal/repository/notification/model"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notification"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notification/model"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

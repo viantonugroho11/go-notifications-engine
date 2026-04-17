@@ -3,12 +3,12 @@ package apis
 import (
 	"github.com/labstack/echo/v4"
 
-	"go-boilerplate-clean/internal/transport/apis/handler"
-	"go-boilerplate-clean/internal/usecase/notificationinbox"
-	"go-boilerplate-clean/internal/usecase/notificationlogs"
-	"go-boilerplate-clean/internal/usecase/notifications"
-	"go-boilerplate-clean/internal/usecase/notificationtemplates"
-	"go-boilerplate-clean/internal/usecase/users"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis/handler"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationinbox"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationlogs"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationtemplates"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/users"
 )
 
 type Services struct {

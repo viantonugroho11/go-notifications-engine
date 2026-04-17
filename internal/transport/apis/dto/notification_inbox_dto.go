@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	inboxEntity "go-boilerplate-clean/internal/entity/notificationinbox"
+	inboxEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
 
 	"github.com/labstack/echo/v4"
 )

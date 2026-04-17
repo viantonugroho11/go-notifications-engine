@@ -2,9 +2,10 @@ package event
 
 import (
 	"context"
-	"go-boilerplate-clean/internal/client/notification"
-	"go-boilerplate-clean/internal/entity/notificationinbox"
-	"go-boilerplate-clean/internal/entity/notifications"
+
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/notification"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 )
 
 type NotificationInboxCreatedUsecase interface {
@@ -21,10 +22,10 @@ func NewNotificationInboxCreatedUsecase(notificationlogClient notification.Clien
 
 func (s *notificationInboxCreatedUsecase) Create(ctx context.Context, n notifications.NotificationEventUsecase) error {
 	_, err := s.notificationlogClient.CreateInbox(ctx, notificationinbox.NotificationInbox{
-		UserID: n.NotificationLogs.UserID,
+		UserID:            n.NotificationLogs.UserID,
 		NotificationLogID: n.NotificationLogs.ID,
-		Message: n.NotificationLogs.RenderedMessage,
-		Subject: n.NotificationLogs.RenderedSubject,
+		Message:           n.NotificationLogs.RenderedMessage,
+		Subject:           n.NotificationLogs.RenderedSubject,
 	})
 	if err != nil {
 		return err

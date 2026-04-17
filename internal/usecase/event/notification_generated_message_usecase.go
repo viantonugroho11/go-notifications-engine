@@ -2,9 +2,10 @@ package event
 
 import (
 	"context"
-	"go-boilerplate-clean/internal/client/notification"
-	"go-boilerplate-clean/internal/entity/notificationlogs"
-	"go-boilerplate-clean/internal/entity/notifications"
+
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/notification"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 )
 
 type NotificationGeneratedMessageUsecase interface {
@@ -20,7 +21,7 @@ func NewNotificationGeneratedMessageUsecase(notificationClient notification.Clie
 }
 
 func (s *notificationGeneratedMessageUsecase) GenerateMessage(ctx context.Context, n notifications.NotificationEventUsecase) error {
-	
+
 	notificationTemplate, err := s.notificationClient.GetNotificationTemplate(ctx, n.NotificationTemplateID)
 	if err != nil {
 		return err
@@ -30,13 +31,13 @@ func (s *notificationGeneratedMessageUsecase) GenerateMessage(ctx context.Contex
 	n.NotificationLogs.RenderedMessage = renderedMessage
 	n.NotificationLogs.RenderedSubject = renderedSubject
 	_, err = s.notificationClient.UpdateNotificationLog(ctx, notificationlogs.NotificationLog{
-		ID: n.NotificationLogs.ID,
+		ID:              n.NotificationLogs.ID,
 		RenderedMessage: renderedMessage,
 		RenderedSubject: renderedSubject,
-		State: notificationlogs.StateSent,
+		State:           notificationlogs.StateSent,
 	})
 	if err != nil {
 		return err
-	}			
+	}
 	return nil
 }

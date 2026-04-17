@@ -3,7 +3,7 @@ package notificationtemplate
 import (
 	"context"
 
-	tplEntity "go-boilerplate-clean/internal/entity/notificationtemplates"
+	tplEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationtemplates"
 )
 
 type NotificationTemplateRepository interface {

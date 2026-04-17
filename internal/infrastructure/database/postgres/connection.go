@@ -3,11 +3,11 @@ package postgres
 import (
 	"context"
 
-	notifmodel "go-boilerplate-clean/internal/repository/notification/model"
-	inboxmodel "go-boilerplate-clean/internal/repository/notificationinbox/model"
-	logmodel "go-boilerplate-clean/internal/repository/notificationlog/model"
-	tplmodel "go-boilerplate-clean/internal/repository/notificationtemplate/model"
-	usermodel "go-boilerplate-clean/internal/repository/user/model"
+	notifmodel "github.com/viantonugroho11/go-notifications-engine/internal/repository/notification/model"
+	inboxmodel "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationinbox/model"
+	logmodel "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationlog/model"
+	tplmodel "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationtemplate/model"
+	usermodel "github.com/viantonugroho11/go-notifications-engine/internal/repository/user/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -42,5 +42,3 @@ func Migrate(db *gorm.DB) error {
 		&inboxmodel.NotificationInbox{},
 	)
 }
-
-

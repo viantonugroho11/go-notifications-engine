@@ -3,16 +3,16 @@ package states
 import (
 	"context"
 
-	"go-boilerplate-clean/internal/entity/sample"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/sample"
 	"gorm.io/gorm"
 )
 
 type open struct {
 	stateMachine *stateMachineSample
 
-	onCreation IOnStateTransition
-	onHold     IOnStateTransition
-	onClose    IOnStateTransition
+	onCreation  IOnStateTransition
+	onHold      IOnStateTransition
+	onClose     IOnStateTransition
 	onCancelled IOnStateTransition
 }
 

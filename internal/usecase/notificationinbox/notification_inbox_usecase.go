@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	inboxEntity "go-boilerplate-clean/internal/entity/notificationinbox"
-	repoinbox "go-boilerplate-clean/internal/repository/notificationinbox"
+	inboxEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
+	repoinbox "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationinbox"
 )
 
 type NotificationInboxService interface {
@@ -74,12 +74,12 @@ func validateInbox(i inboxEntity.NotificationInbox, creating bool) error {
 }
 
 var (
-	ErrIDRequired              = newValidationError("id is required")
-	ErrUserIDRequired          = newValidationError("user_id is required")
+	ErrIDRequired                = newValidationError("id is required")
+	ErrUserIDRequired            = newValidationError("user_id is required")
 	ErrNotificationLogIDRequired = newValidationError("notification_log_id is required")
 )
 
 type validationError struct{ msg string }
 
 func newValidationError(msg string) error { return &validationError{msg: msg} }
-func (e *validationError) Error() string { return e.msg }
+func (e *validationError) Error() string  { return e.msg }

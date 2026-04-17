@@ -3,8 +3,8 @@ package bootstrap
 import (
 	"context"
 
-	"go-boilerplate-clean/internal/config"
-	pginfra "go-boilerplate-clean/internal/infrastructure/database/postgres"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	pginfra "github.com/viantonugroho11/go-notifications-engine/internal/infrastructure/database/postgres"
 
 	"gorm.io/gorm"
 )

@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 
 	kafka "github.com/viantonugroho11/go-lib/kafka"
 )
@@ -42,8 +42,6 @@ func (h *NotificationUpdateHandler) Handle(ctx context.Context, evt notifEntity.
 	if evt.After.State == notifEntity.StateProcessing.String() {
 		return kafka.Progress{Status: kafka.ProgressSkip}
 	}
-
-
 
 	n := evt.After.ToNotification()
 	_, err := h.updater.Update(ctx, n)

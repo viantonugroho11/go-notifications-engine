@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"go-boilerplate-clean/internal/client/email"
-	"go-boilerplate-clean/internal/client/firebase"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/email"
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/firebase"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
 )
 
 // SentSender mengirim notifikasi via email atau Firebase berdasarkan channel.

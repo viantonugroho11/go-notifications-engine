@@ -4,39 +4,38 @@ import (
 	"strconv"
 	"time"
 
-	logEntity "go-boilerplate-clean/internal/entity/notificationlogs"
+	logEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
 
 	"github.com/labstack/echo/v4"
 )
 
 type CreateNotificationLogRequest struct {
-	NotificationID   string                 `json:"notification_id"`
-	UserID           string                 `json:"user_id"`
-	Channel          string                 `json:"channel"`
-	SendTo           string                 `json:"send_to,omitempty"`
-	RenderedSubject  string                 `json:"rendered_subject,omitempty"`
-	RenderedMessage  string                 `json:"rendered_message,omitempty"`
-	Data             map[string]interface{} `json:"data,omitempty"`
-	State            string                 `json:"state,omitempty"`
-	RetryCount       int                    `json:"retry_count,omitempty"`
-	ErrorMessage     string                 `json:"error_message,omitempty"`
-	SentAt           *time.Time             `json:"sent_at,omitempty"`
+	NotificationID  string                 `json:"notification_id"`
+	UserID          string                 `json:"user_id"`
+	Channel         string                 `json:"channel"`
+	SendTo          string                 `json:"send_to,omitempty"`
+	RenderedSubject string                 `json:"rendered_subject,omitempty"`
+	RenderedMessage string                 `json:"rendered_message,omitempty"`
+	Data            map[string]interface{} `json:"data,omitempty"`
+	State           string                 `json:"state,omitempty"`
+	RetryCount      int                    `json:"retry_count,omitempty"`
+	ErrorMessage    string                 `json:"error_message,omitempty"`
+	SentAt          *time.Time             `json:"sent_at,omitempty"`
 }
 
 type UpdateNotificationLogRequest struct {
-	NotificationID   string                 `json:"notification_id"`
-	UserID           string                 `json:"user_id"`
-	Channel          string                 `json:"channel"`
-	SendTo           string                 `json:"send_to,omitempty"`
-	RenderedSubject  string                 `json:"rendered_subject,omitempty"`
-	RenderedMessage  string                 `json:"rendered_message,omitempty"`
-	Data             map[string]interface{} `json:"data,omitempty"`
-	State            string                 `json:"state"`
-	RetryCount       int                    `json:"retry_count,omitempty"`
-	ErrorMessage     string                 `json:"error_message,omitempty"`
-	SentAt           *time.Time             `json:"sent_at,omitempty"`
+	NotificationID  string                 `json:"notification_id"`
+	UserID          string                 `json:"user_id"`
+	Channel         string                 `json:"channel"`
+	SendTo          string                 `json:"send_to,omitempty"`
+	RenderedSubject string                 `json:"rendered_subject,omitempty"`
+	RenderedMessage string                 `json:"rendered_message,omitempty"`
+	Data            map[string]interface{} `json:"data,omitempty"`
+	State           string                 `json:"state"`
+	RetryCount      int                    `json:"retry_count,omitempty"`
+	ErrorMessage    string                 `json:"error_message,omitempty"`
+	SentAt          *time.Time             `json:"sent_at,omitempty"`
 }
-
 
 // response dto
 type NotificationLogResponse struct {
@@ -46,11 +45,11 @@ type NotificationLogResponse struct {
 	SendTo          string     `json:"send_to,omitempty"`
 	RenderedSubject string     `json:"rendered_subject,omitempty"`
 	RenderedMessage string     `json:"rendered_message,omitempty"`
-	State           string                 `json:"state,omitempty"`
-	RetryCount      int                    `json:"retry_count,omitempty"`
-	ErrorMessage    string                 `json:"error_message,omitempty"`
-	SentAt          *time.Time             `json:"sent_at,omitempty"`
-	CreatedAt       time.Time              `json:"created_at"`
+	State           string     `json:"state,omitempty"`
+	RetryCount      int        `json:"retry_count,omitempty"`
+	ErrorMessage    string     `json:"error_message,omitempty"`
+	SentAt          *time.Time `json:"sent_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
 }
 
 func (r *NotificationLogResponse) FromEntity(l logEntity.NotificationLog) NotificationLogResponse {
@@ -62,26 +61,26 @@ func (r *NotificationLogResponse) FromEntity(l logEntity.NotificationLog) Notifi
 		RenderedSubject: l.RenderedSubject,
 		RenderedMessage: l.RenderedMessage,
 		// Data:            l.Data,
-		State:           l.State.String(),
-		RetryCount:      l.RetryCount,
-		ErrorMessage:    l.ErrorMessage,
-		SentAt:          l.SentAt,
-		CreatedAt:       l.CreatedAt,
+		State:        l.State.String(),
+		RetryCount:   l.RetryCount,
+		ErrorMessage: l.ErrorMessage,
+		SentAt:       l.SentAt,
+		CreatedAt:    l.CreatedAt,
 	}
 }
 func (r *CreateNotificationLogRequest) ToEntity() logEntity.NotificationLog {
 	return logEntity.NotificationLog{
-		NotificationID:  r.NotificationID,
-		UserID:          r.UserID,
+		NotificationID: r.NotificationID,
+		UserID:         r.UserID,
 		// Channel:         logEntity.Channel(r.Channel),
 		SendTo:          r.SendTo,
 		RenderedSubject: r.RenderedSubject,
 		RenderedMessage: r.RenderedMessage,
 		// Data:            r.Data,
-		State:           logEntity.State(r.State),
-		RetryCount:      r.RetryCount,
-		ErrorMessage:    r.ErrorMessage,
-		SentAt:          r.SentAt,
+		State:        logEntity.State(r.State),
+		RetryCount:   r.RetryCount,
+		ErrorMessage: r.ErrorMessage,
+		SentAt:       r.SentAt,
 	}
 }
 

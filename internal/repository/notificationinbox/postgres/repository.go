@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 
-	inboxEntity "go-boilerplate-clean/internal/entity/notificationinbox"
-	"go-boilerplate-clean/internal/repository/notificationinbox"
-	"go-boilerplate-clean/internal/repository/notificationinbox/model"
-
+	inboxEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationinbox"
+	"github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationinbox/model"
 
 	"gorm.io/gorm"
 )
@@ -75,4 +74,3 @@ func (r *notificationInboxRepository) Delete(ctx context.Context, id string) err
 	}
 	return nil
 }
-

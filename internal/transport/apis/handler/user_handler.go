@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	userEntity "go-boilerplate-clean/internal/entity/users"
-	"go-boilerplate-clean/internal/transport/apis/dto"
-	userUsecase "go-boilerplate-clean/internal/usecase/users"
+	userEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/users"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis/dto"
+	userUsecase "github.com/viantonugroho11/go-notifications-engine/internal/usecase/users"
 
 	"github.com/labstack/echo/v4"
 )

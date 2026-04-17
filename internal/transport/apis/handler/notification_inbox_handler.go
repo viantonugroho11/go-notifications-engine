@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	inboxEntity "go-boilerplate-clean/internal/entity/notificationinbox"
-	"go-boilerplate-clean/internal/transport/apis/dto"
-	inboxUsecase "go-boilerplate-clean/internal/usecase/notificationinbox"
+	inboxEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationinbox"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis/dto"
+	inboxUsecase "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationinbox"
 
 	"github.com/labstack/echo/v4"
 )

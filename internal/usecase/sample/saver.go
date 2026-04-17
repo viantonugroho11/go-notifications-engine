@@ -2,13 +2,13 @@ package sample
 
 import (
 	"context"
-	"go-boilerplate-clean/internal/config"
-	"go-boilerplate-clean/internal/entity/sample"
-	"go-boilerplate-clean/internal/usecase/sample/states"
+
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/sample"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/sample/states"
 )
 
 type (
-
 	StateMachineSample interface {
 		Do(ctx context.Context, update sample.Sample) (sample.Sample, error)
 	}

@@ -2,8 +2,9 @@ package model
 
 import (
 	"encoding/json"
-	notificationtemplates "go-boilerplate-clean/internal/entity/notificationtemplates"
 	"time"
+
+	notificationtemplates "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationtemplates"
 
 	"gorm.io/gorm"
 )
@@ -25,39 +26,38 @@ func (NotificationTemplate) TableName() string {
 	return "notification_templates"
 }
 
-
 func (n NotificationTemplate) ToEntity() notificationtemplates.NotificationTemplate {
 	var payloadSchema map[string]interface{}
 	if len(n.PayloadSchema) > 0 {
 		_ = json.Unmarshal(n.PayloadSchema, &payloadSchema)
 	}
 	return notificationtemplates.NotificationTemplate{
-		ID: n.ID,
-		Name: n.Name,
-		Subject: n.Subject,
-		Body: n.Body,
+		ID:            n.ID,
+		Name:          n.Name,
+		Subject:       n.Subject,
+		Body:          n.Body,
 		PayloadSchema: payloadSchema,
-		Channel: n.Channel,
-		TemplateType: notificationtemplates.TemplateType(n.TemplateType),
-		CreatedAt: n.CreatedAt,
-		UpdatedAt: n.UpdatedAt,
-		DeletedAt: n.DeletedAt,
+		Channel:       n.Channel,
+		TemplateType:  notificationtemplates.TemplateType(n.TemplateType),
+		CreatedAt:     n.CreatedAt,
+		UpdatedAt:     n.UpdatedAt,
+		DeletedAt:     n.DeletedAt,
 	}
 }
 
 func ToDBNotificationTemplate(t notificationtemplates.NotificationTemplate) NotificationTemplate {
 	schemaJSON, _ := json.Marshal(t.PayloadSchema)
 	return NotificationTemplate{
-		ID: t.ID,
-		Name: t.Name,
-		Subject: t.Subject,
-		Body: t.Body,
+		ID:            t.ID,
+		Name:          t.Name,
+		Subject:       t.Subject,
+		Body:          t.Body,
 		PayloadSchema: schemaJSON,
-		Channel: t.Channel,
-		TemplateType: t.TemplateType.String(),
-		CreatedAt: t.CreatedAt,
-		UpdatedAt: t.UpdatedAt,
-		DeletedAt: t.DeletedAt,
+		Channel:       t.Channel,
+		TemplateType:  t.TemplateType.String(),
+		CreatedAt:     t.CreatedAt,
+		UpdatedAt:     t.UpdatedAt,
+		DeletedAt:     t.DeletedAt,
 	}
 }
 
@@ -83,4 +83,3 @@ func ApplyListParam(query *gorm.DB, param *notificationtemplates.NotificationTem
 	}
 	return query
 }
-

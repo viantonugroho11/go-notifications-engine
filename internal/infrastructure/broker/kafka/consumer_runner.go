@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"go-boilerplate-clean/internal/config"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	eventkafka "go-boilerplate-clean/internal/transport/event/kafka"
+	"github.com/viantonugroho11/go-notifications-engine/internal/config"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	eventkafka "github.com/viantonugroho11/go-notifications-engine/internal/transport/event/kafka"
 
 	libkafka "github.com/viantonugroho11/go-lib/kafka"
 )

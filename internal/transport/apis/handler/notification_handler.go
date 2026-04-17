@@ -3,10 +3,10 @@ package handler
 import (
 	"net/http"
 
-	"go-boilerplate-clean/internal/entity/notifications"
-	notifEntity "go-boilerplate-clean/internal/entity/notifications"
-	"go-boilerplate-clean/internal/transport/apis/dto"
-	notifUsecase "go-boilerplate-clean/internal/usecase/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	notifEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notifications"
+	"github.com/viantonugroho11/go-notifications-engine/internal/transport/apis/dto"
+	notifUsecase "github.com/viantonugroho11/go-notifications-engine/internal/usecase/notifications"
 
 	"github.com/labstack/echo/v4"
 )

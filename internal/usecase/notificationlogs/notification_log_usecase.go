@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	logEntity "go-boilerplate-clean/internal/entity/notificationlogs"
-	repolog "go-boilerplate-clean/internal/repository/notificationlog"
-	"go-boilerplate-clean/internal/usecase/notificationlogs/states"
+	logEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationlogs"
+	repolog "github.com/viantonugroho11/go-notifications-engine/internal/repository/notificationlog"
+	"github.com/viantonugroho11/go-notifications-engine/internal/usecase/notificationlogs/states"
 
 	"gorm.io/gorm"
 )
@@ -109,14 +109,14 @@ func validateLog(l logEntity.NotificationLog) error {
 }
 
 var (
-	ErrIDRequired           = newValidationError("id is required")
+	ErrIDRequired             = newValidationError("id is required")
 	ErrNotificationIDRequired = newValidationError("notification_id is required")
-	ErrUserIDRequired       = newValidationError("user_id is required")
-	ErrChannelRequired      = newValidationError("channel is required")
-	ErrStateRequired        = newValidationError("state is required")
+	ErrUserIDRequired         = newValidationError("user_id is required")
+	ErrChannelRequired        = newValidationError("channel is required")
+	ErrStateRequired          = newValidationError("state is required")
 )
 
 type validationError struct{ msg string }
 
 func newValidationError(msg string) error { return &validationError{msg: msg} }
-func (e *validationError) Error() string { return e.msg }
+func (e *validationError) Error() string  { return e.msg }

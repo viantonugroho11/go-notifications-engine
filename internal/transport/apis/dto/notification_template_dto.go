@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	tplEntity "go-boilerplate-clean/internal/entity/notificationtemplates"
+	tplEntity "github.com/viantonugroho11/go-notifications-engine/internal/entity/notificationtemplates"
 
 	"github.com/labstack/echo/v4"
 )
@@ -20,16 +20,16 @@ type CreateNotificationTemplateRequest struct {
 
 // response dto
 type NotificationTemplateResponse struct {
-	ID            string                 `json:"id"`
-	Name          string                 `json:"name"`
-	Subject       string                 `json:"subject,omitempty"`
-	Body          string                 `json:"body,omitempty"`
+	ID            string         `json:"id"`
+	Name          string         `json:"name"`
+	Subject       string         `json:"subject,omitempty"`
+	Body          string         `json:"body,omitempty"`
 	PayloadSchema map[string]any `json:"payload_schema,omitempty"`
-	Channel       string                 `json:"channel"`
-	TemplateType  string                 `json:"template_type,omitempty"`
-	CreatedAt     time.Time              `json:"created_at"`
-	UpdatedAt     *time.Time             `json:"updated_at,omitempty"`
-	DeletedAt     *time.Time             `json:"deleted_at,omitempty"`
+	Channel       string         `json:"channel"`
+	TemplateType  string         `json:"template_type,omitempty"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     *time.Time     `json:"updated_at,omitempty"`
+	DeletedAt     *time.Time     `json:"deleted_at,omitempty"`
 }
 
 func (r *NotificationTemplateResponse) FromEntity(t tplEntity.NotificationTemplate) NotificationTemplateResponse {
@@ -55,7 +55,6 @@ type UpdateNotificationTemplateRequest struct {
 	Channel       string                 `json:"channel"`
 	TemplateType  string                 `json:"template_type,omitempty"`
 }
-
 
 func (r *CreateNotificationTemplateRequest) ToEntity() tplEntity.NotificationTemplate {
 	return tplEntity.NotificationTemplate{
