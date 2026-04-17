@@ -1,212 +1,176 @@
-# Go Boilerplate – Clean Architecture
+# Notifications Engine (Go)
 
-A structured Go boilerplate (clean-architecture inspired) using:
-- Echo (HTTP server)
-- GORM + PostgreSQL (ORM & database)
-- Kafka: producer dan consumer via [go-lib/kafka](https://github.com/viantonugroho11/go-lib); init producer di `internal/infrastructure/broker/kafka`, registrasi & init consumer di `internal/transport/event/kafka/handler` (registry + config per consumer)
-- Redis client via `github.com/redis/go-redis/v9`
-- Viper for configuration (file + environment override)
+A Go service for managing **notifications**, **templates**, **per-user logs**, and **inbox** records, built around **clean architecture** patterns. It exposes a REST API (Echo), persists data with **GORM + PostgreSQL**, publishes and consumes events via **Kafka** ([go-lib/kafka](https://github.com/viantonugroho11/go-lib)), and initializes a **Redis** client for caching or future cross-cutting concerns. Configuration is loaded with **[go-config-library](https://github.com/viantonugroho11/go-config-library)** (optional Consul + local config files).
 
-Goals: clear folder layout, separation of concerns (usecase, repository, transport, infrastructure), and explicit dependency wiring.
+The Go module name is `github.com/viantonugroho11/go-notifications-engine` (see `go.mod`); this repository implements a **notifications engine** on top of that layout.
 
-## Prerequisites
-- Go (per `go.mod`, Go 1.23+)
-- PostgreSQL
-- Kafka broker (+ Zookeeper for the provided compose)
-- Redis
+## Features
 
-## Folder Structure
-```
-cmd/
-  app/                 # application entrypoint (main)
-internal/
-  config/              # configuration loader (Viper) & DSN helpers
-  entity/              # domain entities (e.g., User)
-  infrastructure/
-    database/
-      postgres/        # GORM connection & migration
-        connection.go
-        migrate/       # optional SQL examples
-    broker/
-      kafka/           # Kafka producer wrapper (consumer pakai go-lib/kafka)
-    cache/
-      redis/           # Redis client initialization
-  repository/
-    user/
-      model/           # GORM model mappings
-      postgres/        # repository implementation with GORM
-      user_repository.go  # repository interface
-  transport/
-    apis/              # HTTP router
-    http/
-      dto/             # request/response DTOs
-      handler/         # Echo handlers
-    event/
-      kafka/           # consumer runner & example handlers
-  usecase/             # application/service layer
-configs/
-  config.yaml          # default configuration (overridable by env)
-Dockerfile
-docker-compose.yml
-```
+- **HTTP API** — CRUD for users, notifications, notification templates, notification logs, and notification inbox.
+- **Domain model** — Notifications carry channel, category, scheduling, JSON `data`, and related `notification_logs` per user.
+- **Kafka** — Producer for outbound notification events; separate **consumer** binary for processing pipeline stages (e.g. `notification`, `sent`).
+- **PostgreSQL** — GORM `AutoMigrate` for `users`, `notifications`, `notification_templates`, `notification_logs`, `notification_inbox`.
+- **Redis** — Client wired at bootstrap (ready for rate limiting, locks, or cache).
+- **Integrations (code paths)** — Email (gomail), Firebase/FCM helpers, JSON schema validation, and outbound HTTP clients for downstream services (see `internal/client`).
 
-## Configuration (Viper)
-Configuration is read from `configs/config.yaml` and can be overridden by environment variables (Viper’s `AutomaticEnv`).
+## Requirements
 
-HTTP:
-- `PORT` (default: `8080`)
+- **Go** — `go 1.24.0` / toolchain as declared in `go.mod` (Go 1.24+ recommended).
+- **PostgreSQL** — compatible with GORM Postgres driver.
+- **Kafka** — broker reachable from the app and consumer processes; ZooKeeper if you use the provided Compose stack.
+- **Redis** — for the initialized client (optional for minimal API-only runs depending on your code paths).
 
-PostgreSQL (choose one approach):
-- `DATABASE_URL` (e.g., `postgres://postgres:postgres@127.0.0.1:5432/appdb?sslmode=disable`)
-- or separate fields:
-  - `DB_HOST` (default: `127.0.0.1`)
-  - `DB_PORT` (default: `5432`)
-  - `DB_USER` (default: `postgres`)
-  - `DB_PASSWORD` (default: empty)
-  - `DB_NAME` (default: `appdb`)
-  - `DB_SSLMODE` (default: `disable`)
+## Quick start
 
-Kafka:
-- `KAFKA_BROKERS` (default: `127.0.0.1:9092`, comma-separated)
-- `KAFKA_CLIENT_ID` (default: `go-boilerplate-clean`)
-- `KAFKA_GROUP_ID` (default: `go-boilerplate-clean-group`)
-- `KAFKA_TOPIC` (default: `user-events`)
+### 1. Clone and dependencies
 
-Redis:
-- `REDIS_ADDR` (default: `127.0.0.1:6379`)
-- `REDIS_PASSWORD` (default: empty)
-- `REDIS_DB` (default: `0`)
-
-See `configs/config.yaml` for a docker-friendly baseline.
-
-## Run Locally
-1) Install dependencies (optional; `go mod tidy` will fetch them):
 ```bash
-go get gorm.io/gorm gorm.io/driver/postgres
-go get github.com/labstack/echo/v4
-go get github.com/IBM/sarama
-go get github.com/redis/go-redis/v9
-go get github.com/google/uuid
-go get github.com/spf13/viper
-go mod tidy
+git clone <repository-url>
+cd go-notifications-engine
+go mod download
 ```
 
-2) Set environment variables (example):
-```bash
-export PORT=8080
-export DATABASE_URL="postgres://postgres:postgres@127.0.0.1:5432/appdb?sslmode=disable"
-export KAFKA_BROKERS="127.0.0.1:9092"
-export KAFKA_CLIENT_ID="go-boilerplate-clean"
-export KAFKA_GROUP_ID="go-boilerplate-clean-group"
-export KAFKA_TOPIC="user-events"
-export REDIS_ADDR="127.0.0.1:6379"
-export REDIS_DB="0"
-```
+### 2. Infrastructure
 
-3) Run the server:
-```bash
-go run ./cmd/app
-```
+Use Docker Compose for Postgres, ZooKeeper, Kafka, and Redis:
 
-At startup the app will:
-- Initialize a GORM connection to PostgreSQL
-- AutoMigrate the `users` table
-- Start Echo HTTP server
-- Initialize Redis client
-- Initialize Kafka producer & consumer (consumer runs in background)
-
-## Docker & Compose
-Build the image:
-```bash
-docker build -t go-boilerplate-clean:latest .
-```
-
-Run with compose (app + Postgres + Zookeeper + Kafka + Redis):
 ```bash
 docker compose up -d --build
 ```
 
-Exposed ports:
-- App: `8080`
-- Postgres: `5432`
-- Kafka: `9092`
-- Redis: `6379`
+Default Compose ports: app **8080**, Postgres **5432**, Kafka **9092**, Redis **6379**, ZooKeeper **2181**.
 
-## HTTP Endpoints
-Base URL: `http://localhost:${PORT}`
+### 3. Configuration
 
-Healthcheck:
+The application loads configuration via `go-config-library`:
+
+- Service key: **`github.com/viantonugroho11/go-notifications-engine`** (see `cmd/app/main.go` and `cmd/consumer/main.go`).
+- Optional **Consul**: set `CONSUL_URL` when using remote config.
+- Local files: **`WithConfigFileSearchPaths("./config")`** — provide a `./config` directory with files your environment expects, or align paths with your deployment. A baseline example lives under **`configs/config.yaml`** (you may copy or symlink into `./config` for local runs).
+
+The `Configuration` struct in `internal/config` defines nested sections (`app`, `database`, `kafka`, `redis`, etc.). Keep your YAML/Consul keys consistent with how `go-config-library` maps into that struct in your environment.
+
+### 4. Run the HTTP server
+
 ```bash
-GET /healthz
+go run ./cmd/app
 ```
 
-User CRUD:
-- `POST /users`
-  - Body:
-    ```json
-    { "name": "Jane", "email": "jane@example.com" }
-    ```
-- `GET /users`
-- `GET /users/:id`
-- `PUT /users/:id`
-  - Body:
-    ```json
-    { "name": "Jane Updated", "email": "jane.updated@example.com" }
-    ```
-- `DELETE /users/:id`
+On startup the app connects to PostgreSQL, runs **AutoMigrate**, starts the Echo server, initializes **Redis**, and sets up the **Kafka producer** (see `internal/bootstrap/app.go`).
 
-Example cURL:
+### 5. Run a Kafka consumer (separate process)
+
+Consumers are started explicitly by key:
+
 ```bash
-curl -X POST http://localhost:8080/users \
+go run ./cmd/consumer -consumer notification
+# or
+go run ./cmd/consumer -consumer sent
+```
+
+Available keys are defined in `internal/transport/event/kafka` (`notification`, `sent`). The `sent` consumer requires `kafka.topic_sent` (or equivalent) to be set in configuration — see `internal/infrastructure/broker/kafka/registry.go`.
+
+## Project layout
+
+```
+cmd/
+  app/           # HTTP API entrypoint
+  consumer/      # Kafka consumer entrypoint (-consumer <key>)
+internal/
+  bootstrap/     # Wiring: DB, producer, Redis, Echo, consumer app
+  config/        # Configuration types and helpers (DSN, Kafka, email, FCM, …)
+  entity/        # Domain entities
+  client/        # Outbound integrations (email, firebase, notification gateway, person service, …)
+  infrastructure/
+    database/postgres/   # GORM connect + AutoMigrate
+    broker/kafka/        # Producer, consumer runner, registry
+    cache/redis/         # Redis client
+  repository/    # Interfaces + GORM models + postgres implementations
+  transport/
+    apis/        # Echo routes, HTTP handlers, DTOs
+    event/kafka/ # Consumer handlers and event routing
+  usecase/       # Application services and state machines
+  shared/        # Shared utilities (e.g. JSON schema)
+configs/
+  config.yaml    # Example baseline (adjust for local/Compose)
+```
+
+## HTTP API
+
+Base URL: `http://localhost:<port>` (port from config, e.g. **8080**).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/healthz` | Liveness — returns `ok` |
+| POST, GET, GET/:id, PUT/:id, DELETE/:id | `/users` | User CRUD |
+| POST, GET, GET/:id, PUT/:id, DELETE/:id | `/notifications` | Notification CRUD |
+| POST, GET, GET/:id, PUT/:id, DELETE/:id | `/notification-templates` | Template CRUD |
+| POST, GET, GET/:id, PUT/:id, DELETE/:id | `/notification-logs` | Log CRUD |
+| POST, GET, GET/:id, PUT/:id, DELETE/:id | `/notification-inbox` | Inbox CRUD |
+
+Example: create a notification (shape from `internal/transport/apis/dto/notification_dto.go`):
+
+```bash
+curl -sS -X POST "http://localhost:8080/notifications" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Jane","email":"jane@example.com"}'
+  -d '{
+    "event_key": "order.created",
+    "notification_template_id": "<template-uuid>",
+    "data": { "orderId": "123" },
+    "channel": "email",
+    "category": "transactional",
+    "user_ids": ["<user-uuid>"]
+  }'
 ```
+
+Field names and allowed `channel` / `category` values should match your domain enums in `internal/entity/notifications`.
 
 ## Kafka
-Producer (go-lib):
-- Init di `internal/infrastructure/broker/kafka/notification_producer.go` via `NewNotificationProducer(cfg)`; typed `NotificationProducerMessage`, `Publish(ctx, msg)`.
 
-Consumer (go-lib):
-- Registrasi config + handler di `internal/transport/event/kafka/handler/registry.go` (`ConsumerConfig`, `RegisterConsumers`). Setiap consumer punya config sendiri (topic, groupID, clientID).
-- Handler di `internal/transport/event/kafka/handler/`; consumer app di `cmd/consumer/main.go`, bootstrap di `internal/bootstrap/consumer.go`.
+- **Producer** — `internal/infrastructure/broker/kafka/notification_producer.go` (`NewNotificationProducer`, typed publish API).
+- **Consumer registry** — `internal/infrastructure/broker/kafka/registry.go` maps consumer keys to topics and group/client IDs from `config.Configuration`.
+- **Handlers** — `internal/transport/event/kafka/handler/` (e.g. notification lifecycle updates, send pipeline).
+- **Message contract** — Event handlers use `internal/entity/notifications` event payloads as decoded by `go-lib/kafka`.
 
-Notes:
-- Ensure `KAFKA_BROKERS` points to a running broker.
-- Replace `ExampleHandler` to call real usecases as needed.
-
-## Redis
-Client:
-- Initialization in `internal/infrastructure/cache/redis/client.go`.
-- Wired in `cmd/app/main.go`. You can inject it into layers for caching, rate limiting, etc.
+Ensure broker addresses and topics in config match your cluster. For `sent`, set the sent topic in configuration or the consumer will fail validation at startup.
 
 ## Database
-ORM:
-- GORM model for `users` in `internal/repository/user/model/user.go`.
-- AutoMigrate runs on startup.
 
-Optional SQL:
-- Example file at `internal/infrastructure/database/postgres/migrate/init_users.sql`.
+- **Migrations** — At runtime, `postgres.Migrate` runs GORM `AutoMigrate` for all registered models (see `internal/infrastructure/database/postgres/connection.go`).
+- **Legacy makefile** — The root `makefile` contains example `migrate` CLI targets pointing at another database name; treat as a template or update to match this project before use.
 
-## Repository & Usecase
-- Repository interface: `internal/repository/user/user_repository.go`
-- Postgres (GORM) implementation: `internal/repository/user/postgres/repository.go`
-- Usecase: `internal/usecase/user_usecase.go`
-- HTTP handlers (Echo): `internal/transport/http/handler/user_handler.go`
-- HTTP DTOs: `internal/transport/http/dto/`
+## Docker
 
-## Architecture Notes
-- `usecase` depends only on the repository interface
-- `repository/*/postgres` adapts the interface with GORM
-- `transport/http` (Echo) calls usecases
-- `infrastructure` holds I/O details (database, kafka, redis)
+Build the API image:
+
+```bash
+docker build -t go-notifications-engine:latest .
+```
+
+The **Dockerfile** builds `./cmd/app` and copies `configs/` into the image. Ensure the runtime **working directory and config search paths** match how you deploy `go-config-library` (the code searches `./config` by default).
+
+## Development
+
+- **Format / vet / test**
+
+```bash
+go fmt ./...
+go vet ./...
+go test ./...
+```
+
+- **Contributing** — See [CONTRIBUTING.md](./CONTRIBUTING.md) for branch workflow, code layout expectations, and review guidelines.
 
 ## Troubleshooting
-- Build dependency issues: run `go mod tidy`
-- Postgres connection issues: verify `DATABASE_URL` or `DB_*` variables
-- Kafka broker unavailable: verify `KAFKA_BROKERS` and broker status
-- Redis connection refused: verify `REDIS_ADDR` and Redis status
+
+| Symptom | Check |
+|--------|--------|
+| `config load` error | `CONSUL_URL`, local `./config` files, and service name `github.com/viantonugroho11/go-notifications-engine` |
+| Postgres connection failed | DSN / host / port / credentials; Compose network vs localhost |
+| Kafka producer/consumer errors | `KAFKA_BROKERS` (or mapped `kafka.brokers`), topic names, consumer `-consumer` flag |
+| Redis errors | Address, password, DB index |
+| Missing `topic_sent` | Required for `-consumer sent` — set in config |
 
 ## License
-MIT. Feel free to use and modify.
 
-# go-boilerplate-clean
+MIT — see license terms in the repository if a `LICENSE` file is present.
