@@ -1,8 +1,6 @@
 module github.com/viantonugroho11/go-notifications-engine
 
-go 1.24.0
-
-toolchain go1.24.11
+go 1.25.0
 
 require (
 	firebase.google.com/go/v4 v4.19.0
@@ -73,7 +71,7 @@ require (
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.8.0 // indirect
+	github.com/jackc/pgx/v5 v5.9.2 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
