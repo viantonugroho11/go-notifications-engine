@@ -3,10 +3,15 @@ package bootstrap
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/email"
+	"github.com/viantonugroho11/go-notifications-engine/internal/client/firebase"
+	clientnotif "github.com/viantonugroho11/go-notifications-engine/internal/client/notification"
 	"github.com/viantonugroho11/go-notifications-engine/internal/config"
 	brokerkafka "github.com/viantonugroho11/go-notifications-engine/internal/infrastructure/broker/kafka"
 	notifpg "github.com/viantonugroho11/go-notifications-engine/internal/repository/notification/postgres"
@@ -35,7 +40,40 @@ func NewConsumer(cfg config.Configuration, consumerKey string) (*ConsumerApp, er
 	templateRepo := tplpg.NewNotificationTemplateRepository(db)
 	notificationService := usecasenotif.NewNotificationService(notificationRepo, templateRepo, nil)
 
-	svc := eventkafka.EventServices{Notification: notificationService, SentSender: nil}
+	// HTTP client ke API notification (self-call): consumer mutasi state lewat API agar
+	// business logic (state machine, validasi, publish event) tetap di satu tempat.
+	// Timeout 10s: consumer adalah async, network error → Kafka retry.
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	_ = clientnotif.NewClient(cfg.App.NotificationBaseURL, httpClient) // dipakai oleh event usecases jika di-wire
+
+	// Email client
+	var emailClient email.EmailClient
+	if cfg.Email.Host != "" {
+		dialer, err := config.InitializeEmail(cfg.Email)
+		if err != nil {
+			log.Printf("consumer: email client init failed: %v (email tidak akan terkirim)", err)
+		} else {
+			emailClient = email.NewEmailClient(dialer, cfg.Email.User)
+		}
+	}
+
+	// Firebase client
+	var firebaseClient firebase.FirebaseClient
+	if cfg.FCM.ProjectID != "" {
+		fbApp, err := config.ConnectToFirebase(cfg.FCM.ProjectID)
+		if err != nil {
+			log.Printf("consumer: firebase client init failed: %v (push tidak akan terkirim)", err)
+		} else {
+			firebaseClient = firebase.NewFirebaseClient(fbApp)
+		}
+	}
+
+	sentSender := &clientnotif.SentSender{
+		Email:    emailClient,
+		Firebase: firebaseClient,
+	}
+
+	svc := eventkafka.EventServices{Notification: notificationService, SentSender: sentSender}
 	consumers, err := brokerkafka.NewConsumerRunner(cfg, consumerKey, svc)
 	if err != nil {
 		sqlDB, _ := db.DB()

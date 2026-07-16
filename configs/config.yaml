@@ -1,4 +1,5 @@
 port: "8080"
+notification_base_url: "http://localhost:8080"  # base URL API ini sendiri (untuk consumer self-call)
 
 # Jika menggunakan DATABASE_URL, field lain diabaikan
 databaseurl: ""
@@ -14,10 +15,20 @@ kafkabrokers: "kafka:9092"
 kafkaclientid: "github.com/viantonugroho11/go-notifications-engine"
 kafkagroupid: "github.com/viantonugroho11/go-notifications-engine-group"
 kafkatopic: "user-events"
+# kafkatopicsent: "notification-sent"  # topic untuk consumer "sent" (kirim email/push)
 
 # Redis
 redisaddr: "redis:6379"
 redispassword: ""
 redisdb: "0"
+
+# Email (SMTP)
+emailhost: ""
+emailport: 587
+emailuser: ""
+emailpassword: ""
+
+# Firebase FCM
+fcmprojectid: ""  # set via FCM_PROJECT_ID env var di production
 
 

@@ -12,6 +12,8 @@ type Configuration struct {
 	KafkaProducer map[string]string `json:"kafka_producer"`
 	Kafka         Kafka             `json:"kafka"`
 	Redis         Redis             `json:"redis"`
+	Email         Email             `json:"email"`
+	FCM           FCM               `json:"fcm"`
 	// Consumers     Consumers         `json:"consumers"`
 }
 

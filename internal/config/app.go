@@ -1,9 +1,10 @@
 package config
 
 type App struct {
-	Port string `json:"port"`
-	Environment string `json:"environment"`
-	LogLevel string `json:"log_level"`
+	Port                string `json:"port"`
+	Environment         string `json:"environment"`
+	LogLevel            string `json:"log_level"`
+	NotificationBaseURL string `json:"notification_base_url"` // base URL HTTP API ini sendiri (untuk consumer self-call)
 }
 
 func (a App) IsProduction() bool {
