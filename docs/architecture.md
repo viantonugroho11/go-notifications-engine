@@ -1,242 +1,366 @@
-# Architecture — go-notifications-engine
+# Arsitektur — go-notifications-engine
 
 > Level-0 notification service: semua pengiriman notifikasi (email, push, SMS, dll.) melewati service ini.
 
 ---
 
-## Gambaran sistem
+## Gambaran Sistem
 
 ```
 Caller (service lain)
-    │
-    ▼  POST /notifications
-┌──────────────────────────┐
-│   HTTP API (Echo)        │  ← cmd/app
-│   transport/apis/        │
-│   usecase/notifications  │
-│   state machine          │
-└──────────┬───────────────┘
-           │  GORM
+        │
+        ▼  POST /notifications
+┌──────────────────────────────┐
+│   HTTP API (Echo)            │  ← cmd/app
+│   transport/apis/            │
+│   usecase/notifications      │
+│   state machine              │
+└──────────┬───────────────────┘
+           │  GORM + PostgreSQL
            ▼
-      PostgreSQL
-  (notifications, logs,
-   templates, inbox)
-           │
-           │  Kafka publish (setiap state change)
-           ▼
-    ┌─────────────┐
-    │  Kafka      │  topic: notification / sent
-    └──────┬──────┘
-           │
-    ┌──────▼──────────────────────────────────────────────────┐
-    │  Consumer proses terpisah (cmd/consumer -consumer=X)    │
-    │                                                          │
-    │  notification consumer  →  update state via API          │
-    │  sent consumer          →  kirim email/push via API      │
-    └─────────────────────────────────────────────────────────┘
+   ┌───────────────────┐
+   │   PostgreSQL       │
+   │  notifications     │
+   │  notification_logs │
+   │  notification_     │
+   │    templates       │
+   │  notification_     │
+   │    inbox           │
+   │  users             │
+   └──────┬────────────┘
+          │  Kafka publish (setiap state change)
+          ▼
+   ┌─────────────┐
+   │   Kafka      │  topic: user-events / sent
+   └──────┬──────┘
+          │
+   ┌──────▼──────────────────────────────────────────────────┐
+   │  Consumer (cmd/consumer -consumer=X) — proses terpisah  │
+   │                                                          │
+   │  "notification" consumer                                 │
+   │    └─ update state notification via HTTP API             │
+   │                                                          │
+   │  "sent" consumer                                         │
+   │    └─ resolve sendTo dari person service                 │
+   │    └─ render template                                    │
+   │    └─ kirim email (SMTP) / push (FCM)                   │
+   │    └─ update log state via HTTP API                      │
+   └─────────────────────────────────────────────────────────┘
 ```
 
-**Komponen utama:**
+---
+
+## Komponen Utama
 
 | Komponen | Lokasi | Fungsi |
 |---|---|---|
-| HTTP API | `cmd/app`, `transport/apis` | Entry point semua operasi CRUD + trigger pengiriman |
-| Consumer | `cmd/consumer`, `transport/event/kafka` | Proses async: update state, render template, kirim notif |
-| State Machine | `usecase/notifications/states` | Mengatur transisi state notifikasi |
-| Notification Client | `client/notification` | HTTP client consumer → API (lihat keputusan desain di bawah) |
-| Person Client | `client/person` | Resolve email/token/phone per user |
-| External Clients | `client/email`, `client/firebase` | Adapter ke provider eksternal |
+| HTTP API | `cmd/app`, `transport/apis/` | Entry point CRUD + trigger pengiriman |
+| Consumer binary | `cmd/consumer`, `transport/event/kafka/` | Async pipeline: update state, render, kirim |
+| State Machine (Notification) | `usecase/notifications/states/` | Transisi state: CREATED → PROCESSING → COMPLETED/FAILED |
+| State Machine (Log) | `usecase/notificationlogs/states/` | Transisi state log per user |
+| Notification Client | `client/notification/` | HTTP client consumer → API (self-call, lihat keputusan desain) |
+| Person Client | `client/person/` | Resolve email/token/phone per user dari person service |
+| Email Client | `client/email/` | Adapter SMTP via gomail |
+| Firebase Client | `client/firebase/` | Adapter Firebase FCM |
 
 ---
 
-## Keputusan desain
+## Flow Pengiriman Notifikasi
 
-### Consumer memanggil API via HTTP, bukan langsung ke repository
-
-**Keputusan:** Consumer (`cmd/consumer`) tidak boleh mengimpor repository atau usecase secara langsung. Semua mutasi state dilakukan lewat REST API (`client/notification`).
-
-**Alasan:**
-
-1. **Single source of truth untuk business logic.** State machine, validasi, dan publish Kafka event semuanya ada di `usecase/notifications`. Kalau consumer bypass lewat repo langsung, logika ini ter-skip — state bisa invalid, event tidak ter-publish, dan tidak ada audit trail.
-
-2. **Consumer adalah proses terpisah.** `cmd/consumer` dan `cmd/app` deploy sebagai binary berbeda. Consumer tidak punya akses ke semua repo (inbox, log, template) — hanya `notificationRepo` dan `templateRepo` yang di-init di `bootstrap/consumer.go`. Dependency graph sengaja dibuat minimal.
-
-3. **Konsistensi API kontrak.** Setiap update melewati handler yang sama dengan yang dipanggil caller eksternal. Bug yang ketahuan di HTTP path otomatis fix di consumer path juga.
-
-4. **Isolation failure.** Kalau API service down, consumer kembali error dan Kafka retry — tidak ada partial state yang masuk langsung ke DB tanpa validasi.
-
-**Trade-off yang diterima:**
-
-- Tambah satu network hop (~1-5ms) per step consumer. Acceptable karena pipeline ini async dan bukan real-time.
-- Consumer bergantung pada API service up. Mitigasi: consumer return `ProgressError` → Kafka retry otomatis.
-- Loop dependency semu (consumer → API → DB) tapi tidak ada circular import di kode.
-
-**Apa yang TIDAK boleh diubah:** Jangan inject `NotificationRepository` atau usecase langsung ke consumer event handler. Kalau butuh akses data yang tidak tersedia via API, tambah endpoint baru di API layer.
-
----
-
-## Flow pengiriman notifikasi
+### Step-by-step
 
 ```
 1. Caller POST /notifications
-   └─ create notification + logs di DB
-   └─ publish event ke Kafka topic "notification"
+   ├─ validasi request
+   ├─ buat Notification (state: CREATED)
+   ├─ buat NotificationLog per user (state: PENDING)
+   ├─ simpan ke PostgreSQL (FullSaveAssociations)
+   └─ publish event ke Kafka topic "user-events"
 
 2. Consumer "notification" consume event
-   └─ jika state CREATED: panggil PUT /notifications/:id (update state → PROCESSING)
-   └─ state machine publish event baru ke Kafka
+   ├─ filter: skip jika action=DELETE atau state=SCHEDULED/PROCESSING
+   └─ panggil PUT /notifications/:id → update state → PROCESSING
+      └─ state machine publish event baru ke Kafka
 
 3. Consumer "sent" consume event
-   └─ resolve sendTo dari person service
-   └─ render subject+body dari template
-   └─ kirim via email/Firebase
-   └─ update log state → COMPLETED / FAILED
-
-4. Jika category push/in-app: buat inbox entry via POST /notification-inbox
+   ├─ FetchPerson: resolve sendTo dari person service
+   │   ├─ email → person.Email
+   │   ├─ push  → device token dengan LastActiveAt terbaru
+   │   └─ sms/wa/telegram → person.Phone
+   ├─ GenerateMessage: fetch template, render subject+body dengan data
+   │   └─ update log state → PROCESSING
+   └─ Send: kirim ke provider
+       ├─ email → SMTP (gomail)
+       ├─ push  → Firebase FCM
+       └─ update log state → COMPLETED (atau FAILED) + external_ref
 ```
 
-### State machine notifikasi
+### State Machine — Notification
 
 ```
-CREATED → SCHEDULED → PROCESSING → SENT → COMPLETED
-                                        → FAILED
+CREATED
+   │
+   ├── (schedule_at ada) → SCHEDULED
+   │                           │
+   │                     (waktu tiba) → PROCESSING
+   │
+   └── (langsung) → PROCESSING
+                         │
+                    (kirim berhasil) → COMPLETED
+                         │
+                    (kirim gagal)  → FAILED
 ```
 
-### State log notifikasi
+### State Machine — Notification Log (per user)
 
 ```
-PENDING → PROCESSING → SENT → COMPLETED
-                            → FAILED
+PENDING → PROCESSING → COMPLETED
+                     → FAILED
 ```
 
-> **Catatan:** State `SENT` pada log harus di-set hanya setelah pengiriman berhasil ke provider eksternal (email/Firebase), bukan saat template selesai di-render.
+> **Penting:** State `PROCESSING` di-set saat template selesai di-render (siap kirim). State `COMPLETED`/`FAILED` di-set setelah provider eksternal merespons.
 
 ---
 
-## Analisis skala — level-0 service
+## Kafka Event Schema
 
-Service ini adalah **level-0**: semua notifikasi dari seluruh sistem melewati sini. Berikut analisis tiap komponen:
+Semua event menggunakan envelope standar:
 
-### Bottleneck dan kapasitas
+```json
+{
+  "resource_id": "<notification-id>",
+  "meta": {
+    "event_id": "<uuid>",
+    "event_timestamp": "2026-07-17T10:00:00Z",
+    "action": "INSERT",
+    "resource": "Notification",
+    "message_schema_version": 1
+  },
+  "before": { },
+  "after": {
+    "notification_id": "...",
+    "event_key": "order.created",
+    "notification_template_id": "...",
+    "channel": "email",
+    "category": "transactional",
+    "state": "CREATED",
+    "data": { "orderId": "ORD-001" },
+    "notification_logs": [
+      {
+        "id": "...",
+        "user_id": "...",
+        "state": "PENDING"
+      }
+    ]
+  }
+}
+```
 
-| Layer | Estimasi kapasitas default | Risiko utama |
+**Action values:** `INSERT`, `UPDATE`, `DELETE`
+
+Consumer handler baca dari `evt.Meta.Action` (bukan top-level `action`).
+
+---
+
+## Keputusan Desain
+
+### Consumer memanggil API via HTTP (self-call), bukan langsung ke repository
+
+**Keputusan:** Consumer tidak boleh impor repository atau usecase secara langsung. Semua mutasi state lewat REST API (`client/notification`).
+
+**Alasan:**
+
+1. **Single source of truth untuk business logic.** State machine, validasi, dan Kafka publish semuanya ada di `usecase/notifications`. Bypass langsung ke repo → logic ter-skip, state bisa invalid.
+
+2. **Consumer adalah binary terpisah.** `cmd/consumer` dan `cmd/app` deploy berbeda. Consumer hanya init dependency minimal (notificationRepo, templateRepo) — tidak ada akses ke semua usecase.
+
+3. **Konsistensi API kontrak.** Setiap update lewat handler yang sama dengan caller eksternal. Fix di HTTP path otomatis fix di consumer path.
+
+4. **Failure isolation.** API down → consumer error → Kafka retry otomatis. Tidak ada partial state masuk DB tanpa validasi.
+
+**Trade-off yang diterima:**
+
+- Tambah satu network hop (~1–5ms) per step consumer. Acceptable karena pipeline async.
+- Consumer bergantung pada API service up. Mitigasi: consumer return `ProgressError` → Kafka retry.
+
+**Aturan:** Jangan inject `NotificationRepository` atau usecase langsung ke consumer event handler. Kalau butuh data baru via consumer, tambah endpoint di API layer.
+
+---
+
+### Template rendering di entity layer
+
+Go `text/template` dengan `Option("missingkey=zero")` — variable yang tidak ada di `data` di-render sebagai string kosong, tidak error.
+
+```go
+// Contoh template
+"Halo {{.customerName}}, pesanan {{.orderId}} sudah diterima."
+
+// Contoh data
+{"customerName": "Budi", "orderId": "ORD-001"}
+```
+
+**Trade-off:** Tidak support logic kompleks (loop, conditional). Cocok untuk notifikasi sederhana. Kalau butuh logic kompleks, pertimbangkan Sprig atau library template lain.
+
+---
+
+## Data Model
+
+### notifications
+
+| Kolom | Tipe | Keterangan |
 |---|---|---|
-| Echo HTTP server | ~10.000 req/s (single instance) | CPU bound saat JSON marshal besar |
-| PostgreSQL (GORM) | ~1.000–5.000 write/s (tergantung HW) | Connection pool habis saat lonjakan |
-| Kafka producer | Sangat tinggi (batch async) | Tidak ada; Kafka bukan bottleneck |
-| Kafka consumer | 1 consumer per partition | Throughput dibatasi jumlah partition |
-| Email client | Tergantung provider (mis. SES: 14/s default, bisa ratusan/s setelah limit naik) | Rate limit provider |
-| Firebase FCM | 500–1.000 req/s per connection | Perlu batching untuk throughput tinggi |
+| `id` | UUID | Primary key |
+| `event_key` | varchar | Identifier event (e.g. `order.created`) |
+| `notification_template_id` | UUID | FK ke `notification_templates` |
+| `data` | jsonb | Variable untuk template rendering |
+| `channel` | varchar | `email`, `push`, `sms`, dll. |
+| `category` | varchar | `transactional`, `promo`, `system`, `other` |
+| `state` | varchar | State machine notification |
+| `schedule_at` | timestamp | Waktu pengiriman terjadwal (nullable) |
+| `created_by` | varchar | Identifier caller/sistem |
+| `created_at` | timestamp | Waktu dibuat |
+| `updated_at` | timestamp | Waktu update terakhir |
 
-### Titik lemah yang perlu diperhatikan
+### notification_logs
+
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `notification_id` | UUID | FK ke `notifications` |
+| `user_id` | UUID | Target user |
+| `send_to` | text | Alamat pengiriman (email/token/phone) — diisi saat FetchPerson |
+| `rendered_subject` | text | Subject setelah template rendering |
+| `rendered_message` | text | Body setelah template rendering |
+| `state` | varchar | State machine log |
+| `retry_count` | int | Jumlah retry |
+| `error_message` | text | Pesan error dari provider |
+| `external_ref` | text | Message ID dari provider (FCM message ID, SES message ID) |
+| `sent_at` | timestamp | Waktu berhasil terkirim |
+| `created_at` | timestamp | Waktu dibuat |
+
+### notification_templates
+
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `name` | varchar | Nama template |
+| `channel` | varchar | Channel target |
+| `template_type` | varchar | `transactional`, `promo`, `system`, `other` |
+| `subject` | text | Template subject (Go template) |
+| `body` | text | Template body (Go template) |
+| `payload_schema` | jsonb | JSON schema validasi payload `data` |
+
+### notification_inbox
+
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `user_id` | UUID | Pemilik inbox |
+| `notification_log_id` | UUID | FK ke `notification_logs` |
+| `subject` | text | Subject notifikasi (denormalized) |
+| `message` | text | Body notifikasi (denormalized) |
+| `is_read` | boolean | Status baca |
+| `read_at` | timestamp | Waktu dibaca |
+| `created_at` | timestamp | Waktu dibuat |
+
+---
+
+## Aturan Dependency
+
+```
+transport/apis    → usecase → repository (interface) → entity
+transport/event   → usecase → client/ → entity
+bootstrap/        → semua (satu-satunya tempat wiring konkret)
+entity/           → tidak boleh impor layer lain
+client/           → entity (tidak boleh impor usecase/repository)
+```
+
+---
+
+## Analisis Skala
+
+### Estimasi kapasitas default (single instance)
+
+| Layer | Kapasitas | Bottleneck |
+|---|---|---|
+| Echo HTTP server | ~10.000 req/s | CPU saat marshal JSON besar |
+| PostgreSQL (GORM) | ~1.000–5.000 write/s | Connection pool habis saat lonjakan |
+| Kafka producer | Sangat tinggi (batch async) | Bukan bottleneck |
+| Kafka consumer | 1 consumer per partition | Throughput dibatasi jumlah partition |
+| Email (SMTP) | Tergantung provider (SES: ~14/s default) | Rate limit provider |
+| Firebase FCM | ~500–1.000 req/s per connection | Butuh batching untuk throughput tinggi |
+
+### Titik lemah
 
 **1. Consumer single-threaded per key.**
-Setiap consumer key (`notification`, `sent`) berjalan di satu proses. Throughput dibatasi jumlah partition Kafka dan kecepatan pemrosesan per message. Untuk scale:
-- Naikkan partition count di topic
-- Deploy multiple instance consumer (Kafka consumer group otomatis balance)
+Scale: naikkan partition Kafka, deploy multiple consumer instance (consumer group otomatis balance).
 
-**2. External call synchronous dan blocking.**
-Consumer menunggu response email/Firebase sebelum lanjut ke message berikutnya. Kalau provider lambat (timeout 30s), throughput turun drastis.
-- Tambah timeout agresif di HTTP client (rekomendasi: 5s untuk email, 3s untuk FCM)
-- Pertimbangkan goroutine pool untuk process multiple log per notifikasi secara paralel
+**2. External call blocking.**
+Consumer tunggu response email/FCM sebelum proses message berikutnya. Provider lambat → throughput turun.
+Mitigasi: timeout agresif (email: 5s, FCM: 3s), goroutine pool untuk parallel log.
 
-**3. Tidak ada Redis caching di hot path.**
-Template di-fetch via HTTP setiap kali pesan di-render. Kalau volume tinggi, ini bisa jadi N+1 call ke API.
-- Cache template di Redis dengan TTL 5–10 menit
-- Key: `template:{id}`, invalidate saat template di-update
+**3. Template tidak di-cache.**
+Fetch template via HTTP setiap render. Volume tinggi → N+1 HTTP call.
+Mitigasi: cache di Redis, key `template:{id}`, TTL 5–10 menit.
 
-**4. Tidak ada rate limiter di HTTP API.**
-Caller bisa flood POST /notifications tanpa batas.
-- Tambah rate limiter middleware di Echo (per IP atau per API key)
+**4. Tidak ada rate limiter.**
+Caller bisa flood `POST /notifications`.
+Mitigasi: Echo rate limiter middleware per IP atau API key.
 
-**5. Tidak ada DLQ (Dead Letter Queue).**
-Message yang gagal terus di-retry tanpa batas. Bila ada bug permanen (mis. template tidak ada), consumer akan stuck.
-- Konfigurasi max retry di go-lib/kafka
-- Route message yang melebihi max retry ke topic DLQ terpisah
-- Monitor DLQ via alert
+**5. Tidak ada Dead Letter Queue.**
+Message gagal terus di-retry. Bug permanen → consumer stuck.
+Mitigasi: max retry di go-lib/kafka, route ke DLQ topic setelah max retry.
 
 ### Rekomendasi untuk traffic tinggi (>10.000 notif/menit)
 
 ```
-1. Scale horizontal consumer:
-   - Naikkan partition Kafka ke ≥4 per topic
-   - Deploy ≥2 instance consumer (consumer group handle balance otomatis)
-
-2. Connection pool PostgreSQL:
-   - Set MaxOpenConns: 25-50
-   - Set MaxIdleConns: 10
-   - Set ConnMaxLifetime: 5 menit
-
-3. Cache template di Redis:
-   - TTL 5 menit cukup untuk template yang jarang berubah
-
-4. Timeout eksplisit di semua HTTP client:
-   - notification client: 10s
-   - person client: 5s
-   - email client: 5s
-   - firebase client: 3s
-
-5. Batching Firebase:
-   - Gunakan FCM Multicast API untuk push ke banyak device sekaligus
+1. Partition Kafka ≥ 4 per topic + ≥ 2 consumer instance
+2. PostgreSQL connection pool: MaxOpenConns=50, MaxIdleConns=10, ConnMaxLifetime=5m
+3. Redis cache untuk template (TTL 5 menit)
+4. Timeout eksplisit: notification client=10s, person=5s, email=5s, FCM=3s
+5. FCM Multicast API untuk push ke banyak device sekaligus
+6. Dead Letter Queue untuk message yang melebihi max retry
 ```
 
 ---
 
-## Dependency eksternal
+## Dependency Eksternal
 
 | Dependency | Tujuan | Fallback |
 |---|---|---|
-| PostgreSQL | Primary store semua data | Tidak ada; service tidak bisa berfungsi tanpa DB |
-| Kafka | Event bus antar proses | Kalau Kafka down, create tetap jalan (publish error di-log, tidak gagalkan request) |
-| Redis | Cache (belum aktif di hot path) | Tidak ada; optional |
-| Person service | Resolve email/token/phone user | Consumer return error → Kafka retry |
-| Email provider | Kirim email | Retry via Kafka |
+| PostgreSQL | Primary store | Tidak ada — service tidak bisa berjalan tanpa DB |
+| Kafka | Event bus | Kalau Kafka down, create tetap jalan; publish error di-log, tidak gagalkan request |
+| Redis | Cache (belum aktif di hot path) | Optional |
+| Person service | Resolve email/token/phone user | Consumer error → Kafka retry |
+| Email provider (SMTP) | Kirim email | Retry via Kafka |
 | Firebase FCM | Kirim push notification | Retry via Kafka |
 
 ---
 
-## Struktur direktori
+## Channel yang Direncanakan
 
-```
-cmd/
-  app/          → HTTP server entrypoint
-  consumer/     → Kafka consumer entrypoint (-consumer flag)
-internal/
-  entity/       → Domain struct (tidak boleh ada framework/DB tag)
-  repository/   → Interface + model/ + postgres/ per aggregate
-  usecase/      → Business logic + state machine + event publisher
-  transport/
-    apis/       → Echo handler, router, DTO
-    event/kafka → Kafka consumer handler + router
-  infrastructure/
-    broker/kafka → Producer + consumer runner
-    cache/redis  → Redis client
-    database/    → PostgreSQL connection + migrate
-  client/       → HTTP client ke service lain (person, notification, email, firebase)
-  bootstrap/    → Wiring semua dependency (services.go, consumer.go, db.go)
-```
+| Channel | Status | Provider |
+|---|---|---|
+| `email` | Aktif | SMTP (gomail) |
+| `push` | Aktif | Firebase FCM |
+| `sms` | Planned | Twilio / vendor lokal |
+| `whatsapp` | Planned | WhatsApp Business API |
+| `telegram` | Planned | Telegram Bot API |
+| `line` | Planned | LINE Messaging API |
 
-**Aturan dependency:**
-- `transport` boleh impor `usecase` dan `entity`
-- `usecase` boleh impor `repository` (interface) dan `entity`
-- `entity` tidak boleh impor layer lain
-- `client/` adalah adapter eksternal, boleh diimpor oleh `usecase` dan `transport/event`
-- `bootstrap/` boleh impor semua — ini satu-satunya tempat wiring konkret
+Untuk menambah channel baru: implementasi `ChannelSender` interface di `client/`, register di `notification_send_notification_usecase.go` switch case, tambah config dan client init di `bootstrap/consumer.go`.
 
 ---
 
-## Known issues & backlog
+## Backlog & Known Issues
 
 | Issue | Severity | Status |
 |---|---|---|
-| Bug: push device token tidak di-assign di loop | P0 | Open |
-| Bug: push send selalu FAILED karena messageID masuk `remark` | P0 | Open |
-| `SentSender: nil` di `bootstrap/consumer.go` | P0 | Open |
-| State log di-set SENT saat render, bukan saat kirim | P1 | Open |
-| `idx_notifications_send_time` → kolom tidak ada (harusnya `schedule_at`) | P1 | Open |
-| `idx_notification_logs_channel` → kolom di-comment | P1 | Open |
 | Tidak ada autentikasi/otorisasi di HTTP routes | P1 | Open |
-| Tidak ada DLQ untuk message yang gagal berulang | P2 | Open |
-| Template tidak di-cache (fetch setiap message) | P2 | Open |
-| Tidak ada timeout eksplisit di HTTP client | P2 | Open |
-| Rate limiter belum ada di API | P2 | Open |
+| Template tidak di-cache Redis | P2 | Open |
+| Tidak ada DLQ untuk message gagal berulang | P2 | Open |
+| Timeout eksplisit di semua HTTP client | P2 | Open |
+| Rate limiter API belum ada | P2 | Open |
+| SMS/WA/Telegram channel belum diimplementasi | P2 | Planned |
+| Scheduled notification belum ada worker | P2 | Planned |
+| Tidak ada unit/integration test | P2 | Open |
