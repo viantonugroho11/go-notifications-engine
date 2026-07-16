@@ -1,0 +1,1025 @@
+openapi: 3.0.3
+info:
+  title: Go Notifications Engine API
+  description: |
+    REST API untuk notifications engine (Echo).
+    Spesifikasi ini dihasilkan dari `internal/transport/apis` (router, handler, dto, entity).
+  version: 1.0.0
+  contact:
+    name: go-notifications-engine
+    url: https://github.com/viantonugroho11/go-notifications-engine
+
+servers:
+  - url: http://localhost:8080
+    description: Local (docker-compose default PORT=8080)
+
+tags:
+  - name: Health
+  - name: Users
+  - name: Notifications
+  - name: Notification Templates
+  - name: Notification Logs
+  - name: Notification Inbox
+
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: healthz
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      operationId: listUsers
+      responses:
+        "200":
+          description: Daftar user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Users]
+      summary: Create user
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /users/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: getUserById
+      responses:
+        "200":
+          description: User ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Users]
+      summary: Update user
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: User diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Users]
+      summary: Delete user
+      operationId: deleteUser
+      responses:
+        "204":
+          description: User dihapus
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      operationId: listNotifications
+      parameters:
+        - name: event_key
+          in: query
+          schema:
+            type: string
+        - name: notification_template_id
+          in: query
+          schema:
+            type: string
+        - name: channel
+          in: query
+          schema:
+            $ref: "#/components/schemas/NotificationChannel"
+        - name: category
+          in: query
+          description: Nilai dipisah koma (contoh `promo,transactional`)
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Nilai dipisah koma (contoh `CREATED,SENT`)
+          schema:
+            type: string
+        - name: ids
+          in: query
+          description: ID dipisah koma
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Daftar notification
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Notifications]
+      summary: Create notification
+      operationId: createNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationRequest"
+      responses:
+        "201":
+          description: Notification dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /notifications/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Notifications]
+      summary: Get notification by ID
+      operationId: getNotificationById
+      responses:
+        "200":
+          description: Notification ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Notifications]
+      summary: Update notification
+      operationId: updateNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNotificationRequest"
+      responses:
+        "200":
+          description: Notification diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Notifications]
+      summary: Delete notification
+      operationId: deleteNotification
+      responses:
+        "204":
+          description: Notification dihapus
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /notification-templates:
+    get:
+      tags: [Notification Templates]
+      summary: List notification templates
+      operationId: listNotificationTemplates
+      parameters:
+        - name: ids
+          in: query
+          description: ID dipisah koma
+          schema:
+            type: string
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: channel
+          in: query
+          schema:
+            $ref: "#/components/schemas/NotificationChannel"
+        - name: template_type
+          in: query
+          description: Nilai dipisah koma (contoh `promo,transactional`)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Daftar template
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationTemplate"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Notification Templates]
+      summary: Create notification template
+      operationId: createNotificationTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationTemplateRequest"
+      responses:
+        "201":
+          description: Template dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /notification-templates/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Notification Templates]
+      summary: Get notification template by ID
+      operationId: getNotificationTemplateById
+      responses:
+        "200":
+          description: Template ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationTemplate"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Notification Templates]
+      summary: Update notification template
+      operationId: updateNotificationTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNotificationTemplateRequest"
+      responses:
+        "200":
+          description: Template diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Notification Templates]
+      summary: Delete notification template
+      operationId: deleteNotificationTemplate
+      responses:
+        "204":
+          description: Template dihapus
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /notification-logs:
+    get:
+      tags: [Notification Logs]
+      summary: List notification logs
+      operationId: listNotificationLogs
+      parameters:
+        - name: ids
+          in: query
+          description: ID dipisah koma
+          schema:
+            type: string
+        - name: notification_id
+          in: query
+          schema:
+            type: string
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Nilai dipisah koma (contoh `PENDING,SENT`)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Daftar notification log
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationLog"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Notification Logs]
+      summary: Create notification log
+      operationId: createNotificationLog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationLogRequest"
+      responses:
+        "201":
+          description: Log dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationLog"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /notification-logs/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Notification Logs]
+      summary: Get notification log by ID
+      operationId: getNotificationLogById
+      responses:
+        "200":
+          description: Log ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationLog"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Notification Logs]
+      summary: Update notification log
+      operationId: updateNotificationLog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNotificationLogRequest"
+      responses:
+        "200":
+          description: Log diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationLog"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Notification Logs]
+      summary: Delete notification log
+      operationId: deleteNotificationLog
+      responses:
+        "204":
+          description: Log dihapus
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /notification-inbox:
+    get:
+      tags: [Notification Inbox]
+      summary: List notification inbox entries
+      operationId: listNotificationInbox
+      parameters:
+        - name: ids
+          in: query
+          description: ID dipisah koma
+          schema:
+            type: string
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: notification_log_id
+          in: query
+          schema:
+            type: string
+        - name: is_read
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Daftar inbox
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationInbox"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Notification Inbox]
+      summary: Create notification inbox entry
+      operationId: createNotificationInbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationInboxRequest"
+      responses:
+        "201":
+          description: Inbox dibuat
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationInbox"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /notification-inbox/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Notification Inbox]
+      summary: Get notification inbox entry by ID
+      operationId: getNotificationInboxById
+      responses:
+        "200":
+          description: Inbox ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationInbox"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Notification Inbox]
+      summary: Update notification inbox entry
+      operationId: updateNotificationInbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNotificationInboxRequest"
+      responses:
+        "200":
+          description: Inbox diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationInbox"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Notification Inbox]
+      summary: Delete notification inbox entry
+      operationId: deleteNotificationInbox
+      responses:
+        "204":
+          description: Inbox dihapus
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      description: Resource identifier (UUID)
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Permintaan tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            invalidBody:
+              value:
+                error: invalid request body
+    NotFound:
+      description: Resource tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: Kesalahan server internal
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    User:
+      type: object
+      description: |
+        Entity `users.User` tidak memakai tag `json`; respons API memakai nama field Go (PascalCase).
+      properties:
+        ID:
+          type: string
+        Name:
+          type: string
+        Email:
+          type: string
+          format: email
+
+    CreateUserRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    NotificationChannel:
+      type: string
+      enum:
+        - email
+        - sms
+        - push
+        - whatsapp
+        - telegram
+        - line
+        - wechat
+        - weibo
+        - kakao
+
+    NotificationCategory:
+      type: string
+      enum:
+        - promo
+        - transactional
+        - system
+        - other
+
+    NotificationState:
+      type: string
+      enum:
+        - CREATED
+        - SCHEDULED
+        - PROCESSING
+        - SENT
+        - FAILED
+        - COMPLETED
+
+    NotificationLogState:
+      type: string
+      enum:
+        - PENDING
+        - PROCESSING
+        - SENT
+        - FAILED
+        - COMPLETED
+
+    TemplateType:
+      type: string
+      enum:
+        - promo
+        - transactional
+        - system
+        - other
+
+    NotificationLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notification_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        send_to:
+          type: string
+        rendered_subject:
+          type: string
+        rendered_message:
+          type: string
+        state:
+          $ref: "#/components/schemas/NotificationLogState"
+        retry_count:
+          type: integer
+        error_message:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_key:
+          type: string
+        notification_template_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+          additionalProperties: true
+        category:
+          $ref: "#/components/schemas/NotificationCategory"
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        state:
+          $ref: "#/components/schemas/NotificationState"
+        schedule_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+        updated_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        notification_logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationLog"
+
+    CreateNotificationRequest:
+      type: object
+      required:
+        - event_key
+        - notification_template_id
+        - channel
+        - category
+        - user_ids
+      properties:
+        event_key:
+          type: string
+        notification_template_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+          additionalProperties: true
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        category:
+          $ref: "#/components/schemas/NotificationCategory"
+        schedule_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+        user_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Setiap user_id menghasilkan notification_log berstatus PENDING
+
+    UpdateNotificationRequest:
+      type: object
+      properties:
+        event_key:
+          type: string
+        notification_template_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+          additionalProperties: true
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        category:
+          $ref: "#/components/schemas/NotificationCategory"
+        state:
+          $ref: "#/components/schemas/NotificationState"
+        schedule_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by:
+          type: string
+
+    NotificationTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        payload_schema:
+          type: object
+          additionalProperties: true
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        template_type:
+          $ref: "#/components/schemas/TemplateType"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateNotificationTemplateRequest:
+      type: object
+      required: [name, channel]
+      properties:
+        name:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        payload_schema:
+          type: object
+          additionalProperties: true
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        template_type:
+          $ref: "#/components/schemas/TemplateType"
+
+    UpdateNotificationTemplateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        payload_schema:
+          type: object
+          additionalProperties: true
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        template_type:
+          $ref: "#/components/schemas/TemplateType"
+
+    CreateNotificationLogRequest:
+      type: object
+      required:
+        - notification_id
+        - user_id
+        - channel
+      properties:
+        notification_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        send_to:
+          type: string
+        rendered_subject:
+          type: string
+        rendered_message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        state:
+          $ref: "#/components/schemas/NotificationLogState"
+        retry_count:
+          type: integer
+        error_message:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    UpdateNotificationLogRequest:
+      type: object
+      required: [state]
+      properties:
+        notification_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        send_to:
+          type: string
+        rendered_subject:
+          type: string
+        rendered_message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        state:
+          $ref: "#/components/schemas/NotificationLogState"
+        retry_count:
+          type: integer
+        error_message:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    NotificationInbox:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        notification_log_id:
+          type: string
+          format: uuid
+        message:
+          type: string
+        subject:
+          type: string
+        is_read:
+          type: boolean
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    CreateNotificationInboxRequest:
+      type: object
+      required:
+        - user_id
+        - notification_log_id
+        - message
+        - subject
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        notification_log_id:
+          type: string
+          format: uuid
+        is_read:
+          type: boolean
+          default: false
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        message:
+          type: string
+        subject:
+          type: string
+
+    UpdateNotificationInboxRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        notification_log_id:
+          type: string
+          format: uuid
+        is_read:
+          type: boolean
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
