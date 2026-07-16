@@ -28,7 +28,6 @@ func (r *notificationInboxRepository) Create(ctx context.Context, i inboxEntity.
 func (r *notificationInboxRepository) GetByID(ctx context.Context, id string) (inboxEntity.NotificationInbox, error) {
 	var m model.NotificationInbox
 	err := r.db.WithContext(ctx).
-		Preload("NotificationLog").
 		First(&m, "id = ?", id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return inboxEntity.NotificationInbox{}, errors.New("notification inbox not found")
