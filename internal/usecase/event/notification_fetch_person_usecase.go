@@ -33,12 +33,13 @@ func (s *notificationFetchPersonUsecase) Fetch(ctx context.Context, n notificati
 	case notifications.ChannelEmail:
 		sendTo = person.Email
 	case notifications.ChannelPush:
-		// Find the firebase device with the most recent LastActiveAt
+		// Pilih device token dengan LastActiveAt paling baru
 		var latestDeviceToken string
 		var latestTime int64
 		for _, device := range person.Devices {
 			if device.LastActiveAt.UnixNano() > latestTime {
 				latestTime = device.LastActiveAt.UnixNano()
+				latestDeviceToken = device.Token
 			}
 		}
 		sendTo = latestDeviceToken

@@ -30,11 +30,13 @@ func (s *notificationGeneratedMessageUsecase) GenerateMessage(ctx context.Contex
 	renderedSubject := n.GenerateRenderedSubject(notificationTemplate.Subject)
 	n.NotificationLogs.RenderedMessage = renderedMessage
 	n.NotificationLogs.RenderedSubject = renderedSubject
+	// State PROCESSING: template sudah di-render, siap kirim — bukan SENT.
+	// State SENT/COMPLETED di-set oleh send usecase setelah provider eksternal berhasil.
 	_, err = s.notificationClient.UpdateNotificationLog(ctx, notificationlogs.NotificationLog{
 		ID:              n.NotificationLogs.ID,
 		RenderedMessage: renderedMessage,
 		RenderedSubject: renderedSubject,
-		State:           notificationlogs.StateSent,
+		State:           notificationlogs.StateProcessing,
 	})
 	if err != nil {
 		return err

@@ -27,8 +27,8 @@ func NewNotificationProcessingToUsecase(notificationClient notification.Client, 
 }
 
 func (s *notificationProcessingToUsecase) Process(ctx context.Context, n notifications.NotificationEventUsecase) error {
-	var remark string
-	var status notificationlogs.State
+	var errorMessage string
+	var externalRef string // messageID dari provider eksternal (FCM, SES, dll.)
 
 	switch n.Channel {
 	case notifications.ChannelEmail:
@@ -38,7 +38,7 @@ func (s *notificationProcessingToUsecase) Process(ctx context.Context, n notific
 			Body:    n.NotificationLogs.RenderedMessage,
 		})
 		if err != nil {
-			remark = err.Error()
+			errorMessage = err.Error()
 		}
 	case notifications.ChannelPush:
 		messageID, err := s.firebaseClient.Send(ctx, firebase.Message{
@@ -49,15 +49,16 @@ func (s *notificationProcessingToUsecase) Process(ctx context.Context, n notific
 			},
 		})
 		if err != nil {
-			remark = err.Error()
+			errorMessage = err.Error()
+		} else {
+			externalRef = messageID
 		}
-		remark = messageID
 	default:
 		return errors.New("channel not supported")
 	}
 
-	status = notificationlogs.StateCompleted
-	if remark != "" {
+	status := notificationlogs.StateCompleted
+	if errorMessage != "" {
 		status = notificationlogs.StateFailed
 	}
 
@@ -65,7 +66,8 @@ func (s *notificationProcessingToUsecase) Process(ctx context.Context, n notific
 	_, err := s.notificationClient.UpdateNotificationLog(ctx, notificationlogs.NotificationLog{
 		ID:           n.NotificationLogs.ID,
 		State:        status,
-		ErrorMessage: remark,
+		ErrorMessage: errorMessage,
+		ExternalRef:  externalRef,
 		SentAt:       &now,
 	})
 	if err != nil {
