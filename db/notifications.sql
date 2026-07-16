@@ -25,6 +25,6 @@ CREATE TABLE notifications (
 CREATE INDEX idx_notifications_event ON notifications(event_key);
 CREATE INDEX idx_notifications_template ON notifications(notification_template_id);
 CREATE INDEX idx_notifications_state ON notifications(state);
-CREATE INDEX idx_notifications_send_time ON notifications(send_time);
+CREATE INDEX idx_notifications_schedule_at ON notifications(schedule_at);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at);
 CREATE INDEX idx_notifications_updated_at ON notifications(updated_at);

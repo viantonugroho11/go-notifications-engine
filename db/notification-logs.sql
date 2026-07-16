@@ -14,6 +14,7 @@ CREATE TABLE notification_logs (
     state VARCHAR(20) NOT NULL,           -- pending / processing / sending / failed / completed
     retry_count INT DEFAULT 0, -- number of times the notification has been retried
     error_message TEXT, -- error message from the last attempt
+    external_ref TEXT, -- messageID dari provider eksternal (FCM message ID, SES message ID, dll.)
 
     sent_at TIMESTAMP, -- time the notification was sent
     created_at TIMESTAMP NOT NULL DEFAULT now(), -- notification log creation time
@@ -25,7 +26,7 @@ CREATE TABLE notification_logs (
 
 CREATE INDEX idx_notification_logs_notification ON notification_logs(notification_id);
 CREATE INDEX idx_notification_logs_user ON notification_logs(user_id);
-CREATE INDEX idx_notification_logs_channel ON notification_logs(channel);
+-- idx_notification_logs_channel dihapus: kolom channel tidak ada di tabel ini (channel ada di tabel notifications)
 CREATE INDEX idx_notification_logs_state ON notification_logs(state);
 CREATE INDEX idx_notification_logs_sent_at ON notification_logs(sent_at);
 CREATE INDEX idx_notification_logs_created_at ON notification_logs(created_at);

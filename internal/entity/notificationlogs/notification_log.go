@@ -14,6 +14,7 @@ type NotificationLog struct {
 	State        State      `json:"state"`
 	RetryCount   int        `json:"retry_count"`
 	ErrorMessage string     `json:"error_message,omitempty"`
+	ExternalRef  string     `json:"external_ref,omitempty"` // messageID dari provider eksternal (FCM, SES, dll.)
 	SentAt       *time.Time `json:"sent_at,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
 }

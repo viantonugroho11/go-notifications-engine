@@ -21,6 +21,7 @@ type NotificationLog struct {
 	State        string     `gorm:"column:state;not null"`
 	RetryCount   int        `gorm:"column:retry_count"`
 	ErrorMessage string     `gorm:"column:error_message;type:text"`
+	ExternalRef  string     `gorm:"column:external_ref;type:text"`
 	SentAt       *time.Time `gorm:"column:sent_at"`
 	CreatedAt    time.Time  `gorm:"column:created_at;not null"`
 }
@@ -42,6 +43,7 @@ func (n NotificationLog) ToEntity() notificationlogs.NotificationLog {
 		State:        notificationlogs.State(n.State),
 		RetryCount:   n.RetryCount,
 		ErrorMessage: n.ErrorMessage,
+		ExternalRef:  n.ExternalRef,
 		SentAt:       n.SentAt,
 		CreatedAt:    n.CreatedAt,
 	}
@@ -61,6 +63,7 @@ func ToDBNotificationLog(l notificationlogs.NotificationLog) NotificationLog {
 		State:        l.State.String(),
 		RetryCount:   l.RetryCount,
 		ErrorMessage: l.ErrorMessage,
+		ExternalRef:  l.ExternalRef,
 		SentAt:       l.SentAt,
 		CreatedAt:    l.CreatedAt,
 	}
