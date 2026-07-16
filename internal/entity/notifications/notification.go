@@ -150,17 +150,27 @@ func (m *NotificationProducerMessage) ToNotification() Notification {
 	}
 }
 
-type NotificationsEventMessage struct {
-	Action string                      `json:"action"`
-	After  NotificationProducerMessage `json:"after"`
-	Before NotificationProducerMessage `json:"before"`
+type EventMeta struct {
+	EventID             string `json:"event_id"`
+	EventTimestamp      string `json:"event_timestamp"`
+	Action              string `json:"action"`
+	Resource            string `json:"resource"`
+	MessageSchemaVersion int   `json:"message_schema_version"`
 }
 
-func ToNotificationsEventMessage(action string, after NotificationProducerMessage, before NotificationProducerMessage) NotificationsEventMessage {
+type NotificationsEventMessage struct {
+	ResourceID string                      `json:"resource_id"`
+	Meta       EventMeta                   `json:"meta"`
+	After      NotificationProducerMessage `json:"after"`
+	Before     NotificationProducerMessage `json:"before"`
+}
+
+func ToNotificationsEventMessage(resourceID string, meta EventMeta, after NotificationProducerMessage, before NotificationProducerMessage) NotificationsEventMessage {
 	return NotificationsEventMessage{
-		Action: action,
-		After:  after,
-		Before: before,
+		ResourceID: resourceID,
+		Meta:       meta,
+		After:      after,
+		Before:     before,
 	}
 }
 

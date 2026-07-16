@@ -30,7 +30,7 @@ func (h *NotificationUpdateHandler) Name() string { return "notification-update"
 
 // Handle memproses NotificationsEventMessage; untuk INSERT/UPDATE pakai After, untuk DELETE skip atau pakai Before sesuai kebutuhan.
 func (h *NotificationUpdateHandler) Handle(ctx context.Context, evt notifEntity.NotificationsEventMessage, _ ...kafka.Header) kafka.Progress {
-	switch strings.ToUpper(evt.Action) {
+	switch strings.ToUpper(evt.Meta.Action) {
 	case "DELETE":
 		return kafka.Progress{Status: kafka.ProgressSkip}
 	}
